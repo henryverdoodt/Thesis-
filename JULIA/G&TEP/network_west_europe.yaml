@@ -1,0 +1,101 @@
+Nodes:
+  Node_1: "ES"
+  Node_2: "FR"
+  Node_3: "DE"
+  Node_4: "BE"
+  Node_5: "UK"
+  Node_6: "NL"
+  Node_7: "DK"
+  Node_8: "NO"
+
+Bl_ac: 5 # μS/km -> Source ChatGPT: in the range of 1 to 10 μS/km
+Bl_dc: 0.5 # μS/km -> Source ChatGPT: in the range of 0.1 to 1 μS/km
+Lifetime_ac: 40 # years, assumption lifetime of a HVAC
+Lifetime_dc: 40 # years, assumption lifetime of a HVDC
+
+
+AC_Lines:
+ AC_1:
+  Connection: ["ES", "FR"]
+  Length: 50 # km
+  Price: 31280 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ AC_2:
+  Connection: ["FR", "DE"]
+  Length: 50 # km
+  Price: 31280 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ AC_3:
+  Connection: ["FR", "BE"]
+  Length: 50 # km
+  Price: 31280 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ AC_4:
+  Connection: ["BE", "NL"]
+  Length: 50 # km
+  Price: 31280 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ AC_5:
+  Connection: ["BE", "DE"]
+  Length: 50 # km
+  Price: 31280 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ AC_6:
+  Connection: ["NL", "DE"]
+  Length: 50 # km
+  Price: 31280 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ AC_7:
+  Connection: ["DK", "DE"]
+  Length: 50 # km
+  Price: 31280 # EUR/km.MW
+  Capacity: 6000 # MW
+
+DC_Lines:
+ DC_1:
+  Connection: ["UK", "FR"]    # Chilling - Tourbe              # source length assumption of HVDC lines: https://en.wikipedia.org/wiki/List_of_HVDC_projects
+  Length: 204 # km
+  Price: 41150 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ DC_2:
+  Connection: ["UK", "BE"]    # Richborough Energy Park - Bruges
+  Length: 140 # km
+  Price: 41150 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ DC_3:
+  Connection: ["UK", "NO"]    # Blyth - Kvilldal
+  Length: 730 # km
+  Price: 41150 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ DC_4:
+  Connection: ["NO", "BE"]    # Feda - Bruges --> ASSUMPTION (do not exist)
+  Length: 820 # km
+  Price: 41150 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ DC_5:
+  Connection: ["NO", "NL"]    # Feda - Eemshaven
+  Length: 580 # km
+  Price: 41150 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ DC_6:
+  Connection: ["NO", "DK"]    # Kristiansand - Tjele
+  Length: 230 # km
+  Price: 41150 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ DC_7:
+  Connection: ["DK", "NL"]    # Endrup - Eemshaven
+  Length: 325 # km
+  Price: 41150 # EUR/km.MW
+  Capacity: 6000 # MW

@@ -2,8 +2,8 @@
 # Author: Henry Verdoodt
 # Last update: April 4, 2023
 
-#= ## Step 0: Activate environment - ensure consistency accross computers
-using Pkg
+## Step 0: Activate environment - ensure consistency accross computers
+#= using Pkg
 Pkg.activate(@__DIR__) # @__DIR__ = directory this script is in
 Pkg.instantiate() # If a Manifest.toml file exist in the current project, download all the packages declared in that manifest. Else, resolve a set of feasible packages from the Project.toml files and install them.
 Pkg.add("InteractiveUtils")
@@ -16,27 +16,11 @@ Pkg.add("JuMP")
 Pkg.add("Plots")
 Pkg.add("PolyChaos")
 Pkg.add("YAML")
-Pkg.add("StatsPlots") =#
+Pkg.add("StatsPlots")
+Pkg.add("Images")  =#
 
 using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyChaos, InteractiveUtils
-using StatsPlots
-
-Pkg.add("Images")
-using Images
-
-# Load the JPEG image
-img = load("/Users/henryverdoodt/Documents/CODE/IMAGES/europe_map.jpeg")
-
-# Get the dimensions of the image
-width, height = size(img)
-
-# Find the X and Y coordinates of a pixel at position (x, y)
-x, y = 100, 200
-println("X coordinate: ", x)
-println("Y coordinate: ", height - y) # Invert the Y coordinate to match the image axis
-
-Countries = Dict("Spain" => (380, 1400), "France" => (640, 1140), "Belgium" => (722, 960), "Germany" => (880, 960), 
-                 "Netherlands" => (745, 885), "Denmark" => (866, 720), "Norway" => (890, 482), "United Kingdom" => (553, 835))
+using StatsPlots, Images
 
 # Transmission Network Italy
 function plot_transmission_network_italy()
@@ -102,56 +86,89 @@ demand = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/DEMAND/PECD-co
 solar = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/SOLAR/PECD-2021.3-country-LFSolarPV-2025.csv", DataFrame)
 windon = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDON/PECD-2021.3-country-Onshore-2025.csv", DataFrame)
 windoff = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDOFF/PECD-2021.3-country-Offshore-2025.csv", DataFrame)
-
-# filter the data for a specific country and select only the relevant columns
-demand = dropmissing(demand[demand.country .== "BE", [:year, :month, :day, :hour, :dem_MW]], disallowmissing=true)
-
-# Filter the DataFrame to keep only the summer days of year y
-df_subset1 = filter(row -> row.year == y1 && row.month in seasons[season], solar)
-
-
-# Select the desired countries
-df_selected = select(demand, [:country, :year, :month, :day, :hour, :dem_MW],
-    where = (col -> col.country in ["ES", "FR", "DE", "DK", "BE", "UK", "NL", "NO"]) .=> true)
-
-# Filter for the year 2016.0
-df_filtered = filter(row -> row.year == 2016.0, df_selected)
-
-# Pivot the dataframe to have the countries as columns and the dem_MW values as rows
-df_pivoted = stack(df_filtered, [:country], :dem_MW)
-
-# Transpose the dataframe to have the dem_MW values as columns and the countries as rows
-df_transposed = stack(df_pivoted, names(df_pivoted, Not(:country)), :dem_MW)
-
-# Drop missing values
-df_result = dropmissing(df_transposed)
-
-
-# Load input data
-demand = CSV.read(joinpath(@__DIR__, "case_6_demand_10.csv"), DataFrame)
-wind_cf = CSV.read(joinpath(@__DIR__, "case_6_wind_10.csv"), DataFrame)
-pv_cf = CSV.read(joinpath(@__DIR__, "case_6_PV_10.csv"), DataFrame)
 data = YAML.load_file(joinpath(@__DIR__, "overview_data.yaml"))
-network = YAML.load_file(joinpath(@__DIR__, "network_italy.yaml"))
+network = YAML.load_file(joinpath(@__DIR__, "network_west_europe.yaml"))
 println("Done")
+
+# Get the unique countries in the 'country' column
+countries_demand = unique(demand.country) # ["AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK", "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "TR", "UA", "UK"]
+countries_solar= unique(solar.country)    # ["AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK", "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "TR", "UA", "UK"]
+countries_windon = unique(windon.country) # MT is in solar & demand but not in windon => # ["AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "TR", "UA", "UK"]
+countries_windoff= unique(windoff.country) # ["BE", "DE", "DK", "FI", "FR", "IE", "IT", "NL", "PT", "SE", "UK"]
+
+############################# REFORMATING DATASETS (one column per node where each row is the hourly value (demand or cf)) #############################
+# PARAMETERS
+y = 2016.0
+countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
+
+dem = DataFrame(col1 = Float64[])
+for c in intersect(countries, countries_demand)
+    demand1 = dropmissing(demand[demand.country .== c, [:year, :dem_MW]], disallowmissing=true)
+    demand2 = dropmissing(demand1[demand1.year .== 2016.0, [:dem_MW]], disallowmissing=true)
+    rename!(demand2, :dem_MW => c)
+    if isempty(dem)
+        dem = hcat(demand2)
+    else
+        dem = hcat(dem, demand2)
+    end
+end
+
+sol = DataFrame(col1 = Float64[])
+for c in intersect(countries, countries_solar)
+    solar1 = dropmissing(solar[solar.country .== c, [:year, :cf]], disallowmissing=true)
+    solar2 = dropmissing(solar1[solar1.year .== 2016.0, [:cf]], disallowmissing=true)
+    rename!(solar2, :cf => c)
+    if isempty(sol)
+        sol = hcat(solar2)
+    else
+        sol = hcat(sol, solar2)
+    end
+end
+
+won = DataFrame(col1 = Float64[])
+for c in intersect(countries, countries_windon)
+    windon1 = dropmissing(windon[windon.country .== c, [:year, :cf]], disallowmissing=true)
+    windon2 = dropmissing(windon1[windon1.year .== 2016.0, [:cf]], disallowmissing=true)
+    rename!(windon2, :cf => c)
+    if isempty(won)
+        won = hcat(windon2)
+    else
+        won = hcat(won, windon2)
+    end
+end
+
+
+woff = DataFrame(col1 = Float64[])
+for c in intersect(countries, countries_windoff)
+    windoff1 = dropmissing(windoff[windoff.country .== c, [:year, :cf]], disallowmissing=true)
+    windoff2 = dropmissing(windoff1[windoff1.year .== 2016.0, [:cf]], disallowmissing=true)
+    rename!(windoff2, :cf => c)
+    if isempty(woff)
+        woff = hcat(windoff2)
+    else
+        woff = hcat(woff, windoff2)
+    end
+end
+
+
 
 ## Step 2: create model & pass data to model
 m = Model(optimizer_with_attributes(Gurobi.Optimizer))
 
 # Step 2a: create sets
-function define_sets!(m::Model, data::Dict, network::Dict, demand::DataFrame, wind_cf::DataFrame, pv_cf::DataFrame)
+function define_sets!(m::Model, data::Dict, network::Dict)
     m.ext[:sets] = Dict()
     J = m.ext[:sets][:J] = 1:8760 # Timesteps
-    I = m.ext[:sets][:I] = [id for id in keys(data["PowerSector"])] # Generators per type
-    L_ac = m.ext[:sets][:AC_Lines] = [network["AC_Lines"]["AC_$(i)"]["Connection"] for i in 1:6] # AC Lines
-    L_dc = m.ext[:sets][:DC_Lines] = [network["DC_Lines"]["DC_$(i)"]["Connection"] for i in 1:5] # DC Lines
+    I = m.ext[:sets][:I] = [id for id in keys(data["PowerSector"]) if id ∉ ["SPP_lignite", "SPP_coal", "CCGT_old"]] # Generators per type
+    L_ac = m.ext[:sets][:AC_Lines] = [network["AC_Lines"]["AC_$(i)"]["Connection"] for i in 1:7] # AC Lines
+    L_dc = m.ext[:sets][:DC_Lines] = [network["DC_Lines"]["DC_$(i)"]["Connection"] for i in 1:7] # DC Lines
     L = m.ext[:sets][:Lines] = union(m.ext[:sets][:AC_Lines],m.ext[:sets][:DC_Lines]) # Lines
-    N = m.ext[:sets][:Nodes] =  [network["Nodes"]["Node_$(i)"] for i in 1:6]# Nodes
+    N = m.ext[:sets][:Nodes] =  [network["Nodes"]["Node_$(i)"] for i in 1:8]# Nodes
     return m # return model
 end
 
 # Step 2b: add time series
-function process_time_series_data!(m::Model, demand::DataFrame, wind_cf::DataFrame, pv_cf::DataFrame)
+function process_time_series_data!(m::Model, dem::DataFrame, sol::DataFrame, won::DataFrame, woff::DataFrame)
     # extract the relevant sets
     I = m.ext[:sets][:I]
     J = m.ext[:sets][:J]
@@ -160,32 +177,23 @@ function process_time_series_data!(m::Model, demand::DataFrame, wind_cf::DataFra
     # create dictionary to store time series
     m.ext[:timeseries] = Dict()
     m.ext[:timeseries][:D] = Dict()
-    m.ext[:timeseries][:AFW] = Dict()
     m.ext[:timeseries][:AFS] = Dict()
+    m.ext[:timeseries][:AFWON] = Dict()
+    m.ext[:timeseries][:AFWOFF] = Dict()
 
-    # Demand TimeSeries; REF Demand := 2000 MWh
-    m.ext[:timeseries][:D][:Florence] = demand.Florence[1:8760]*2000 
-    m.ext[:timeseries][:D][:Milaan] = demand.Milaan[1:8760]*2000 
-    m.ext[:timeseries][:D][:Rome] = demand.Rome[1:8760]*2000 
-    m.ext[:timeseries][:D][:Bari] = demand.Bari[1:8760]*2000 
-    m.ext[:timeseries][:D][:Sardinia] = demand.Sardinia[1:8760]*2000 
-    m.ext[:timeseries][:D][:Palermo] = demand.Palermo[1:8760]*2000 
-
-    # Wind_AF TimeSeries
-    m.ext[:timeseries][:AFW][:Florence] = wind_cf.Florence[1:8760]
-    m.ext[:timeseries][:AFW][:Milaan] = wind_cf.Milaan[1:8760]
-    m.ext[:timeseries][:AFW][:Rome] = wind_cf.Rome[1:8760]
-    m.ext[:timeseries][:AFW][:Bari] = wind_cf.Bari[1:8760]
-    m.ext[:timeseries][:AFW][:Sardinia] = wind_cf.Sardinia[1:8760]
-    m.ext[:timeseries][:AFW][:Palermo] = wind_cf.Palermo[1:8760]
-
-    # PV_AF TimeSeries
-    m.ext[:timeseries][:AFS][:Florence] = pv_cf.Florence[1:8760]
-    m.ext[:timeseries][:AFS][:Milaan] = pv_cf.Milaan[1:8760]
-    m.ext[:timeseries][:AFS][:Rome] = pv_cf.Rome[1:8760]
-    m.ext[:timeseries][:AFS][:Bari] = pv_cf.Bari[1:8760]
-    m.ext[:timeseries][:AFS][:Sardinia] = pv_cf.Sardinia[1:8760]
-    m.ext[:timeseries][:AFS][:Palermo] = pv_cf.Palermo[1:8760]
+    # TimeSeries
+    for c in intersect(countries, countries_demand)
+        m.ext[:timeseries][:D][Symbol(c)] = dem[!, Symbol(c)]
+    end
+    for c in intersect(countries, countries_solar)
+        m.ext[:timeseries][:AFS][Symbol(c)] = sol[!, Symbol(c)]
+    end
+    for c in intersect(countries, countries_windon)
+        m.ext[:timeseries][:AFWON][Symbol(c)] = won[!, Symbol(c)]
+    end
+    for c in intersect(countries, countries_windoff)
+        m.ext[:timeseries][:AFWOFF][Symbol(c)] = woff[!, Symbol(c)]
+    end
 
     # return model
     return m
@@ -221,18 +229,18 @@ function process_parameters!(m::Model, data::Dict, network::Dict)
 
     
     # parameters of transmission lines AC
-    Fl_MAX_AC = m.ext[:parameters][:Fl_MAX_AC] = [network["AC_Lines"]["AC_$(i)"]["Capacity"] for i in 1:6] # MW, AC Lines
-    L_length_AC = m.ext[:parameters][:L_length_AC] = [network["AC_Lines"]["AC_$(i)"]["Length"] for i in 1:6] # km, Length of AC transmission line
-    L_price_AC = m.ext[:parameters][:L_price_AC] = [network["AC_Lines"]["AC_$(i)"]["Price"] for i in 1:6] # EUR/km.MW, Price of AC line per unit length
-    OC_var_AC = m.ext[:parameters][:OC_var_AC] = [network["AC_Lines"]["AC_$(i)"]["Price"] * network["AC_Lines"]["AC_$(i)"]["Length"] for i in 1:6] # EUR/MW, Investment Cost for AC Transmission line
-    IC_var_AC = m.ext[:parameters][:IC_var_AC] = [(network["AC_Lines"]["AC_$(i)"]["Price"] * network["AC_Lines"]["AC_$(i)"]["Length"]*disc_r)/(1-(1/(1+disc_r)^(network["Lifetime_ac"]))) for i in 1:6] # EUR/MWy, Investment Cost of AC line
+    Fl_MAX_AC = m.ext[:parameters][:Fl_MAX_AC] = [network["AC_Lines"]["AC_$(i)"]["Capacity"] for i in 1:7] # MW, AC Lines
+    L_length_AC = m.ext[:parameters][:L_length_AC] = [network["AC_Lines"]["AC_$(i)"]["Length"] for i in 1:7] # km, Length of AC transmission line
+    L_price_AC = m.ext[:parameters][:L_price_AC] = [network["AC_Lines"]["AC_$(i)"]["Price"] for i in 1:7] # EUR/km.MW, Price of AC line per unit length
+    OC_var_AC = m.ext[:parameters][:OC_var_AC] = [network["AC_Lines"]["AC_$(i)"]["Price"] * network["AC_Lines"]["AC_$(i)"]["Length"] for i in 1:7] # EUR/MW, Investment Cost for AC Transmission line
+    IC_var_AC = m.ext[:parameters][:IC_var_AC] = [(network["AC_Lines"]["AC_$(i)"]["Price"] * network["AC_Lines"]["AC_$(i)"]["Length"]*disc_r)/(1-(1/(1+disc_r)^(network["Lifetime_ac"]))) for i in 1:7] # EUR/MWy, Investment Cost of AC line
 
     # parameters of transmission lines DC 
-    Fl_MAX_DC = m.ext[:parameters][:Fl_MAX_DC] = [network["DC_Lines"]["DC_$(i)"]["Capacity"] for i in 1:5] # MW, DC Lines
-    L_length_DC = m.ext[:parameters][:L_length_DC] = [network["DC_Lines"]["DC_$(i)"]["Length"] for i in 1:5] # km, Length of DC transmission line
-    L_price_DC = m.ext[:parameters][:L_price_DC] = [network["DC_Lines"]["DC_$(i)"]["Price"] for i in 1:5] # EUR/km.MW, Price of DC line per unit length
-    OC_var_DC = m.ext[:parameters][:OC_var_DC] = [network["DC_Lines"]["DC_$(i)"]["Price"] * network["DC_Lines"]["DC_$(i)"]["Length"] for i in 1:5] # EUR/MW, Investment Cost for DC Transmission line
-    IC_var_DC = m.ext[:parameters][:IC_var_DC] = [(network["DC_Lines"]["DC_$(i)"]["Price"] * network["DC_Lines"]["DC_$(i)"]["Length"]*disc_r)/(1-(1/(1+disc_r)^(network["Lifetime_dc"]))) for i in 1:5] # EUR/MWy, Investment Cost of DC line
+    Fl_MAX_DC = m.ext[:parameters][:Fl_MAX_DC] = [network["DC_Lines"]["DC_$(i)"]["Capacity"] for i in 1:7] # MW, DC Lines
+    L_length_DC = m.ext[:parameters][:L_length_DC] = [network["DC_Lines"]["DC_$(i)"]["Length"] for i in 1:7] # km, Length of DC transmission line
+    L_price_DC = m.ext[:parameters][:L_price_DC] = [network["DC_Lines"]["DC_$(i)"]["Price"] for i in 1:7] # EUR/km.MW, Price of DC line per unit length
+    OC_var_DC = m.ext[:parameters][:OC_var_DC] = [network["DC_Lines"]["DC_$(i)"]["Price"] * network["DC_Lines"]["DC_$(i)"]["Length"] for i in 1:7] # EUR/MW, Investment Cost for DC Transmission line
+    IC_var_DC = m.ext[:parameters][:IC_var_DC] = [(network["DC_Lines"]["DC_$(i)"]["Price"] * network["DC_Lines"]["DC_$(i)"]["Length"]*disc_r)/(1-(1/(1+disc_r)^(network["Lifetime_dc"]))) for i in 1:7] # EUR/MWy, Investment Cost of DC line
     Fl_MAX = m.ext[:parameters][:Fl_MAX] = cat(Fl_MAX_AC, Fl_MAX_DC, dims=1) # MW, All Lines, Maximum capacity [USE cat() OR union() function??]
     # return model
     return m
@@ -240,14 +248,14 @@ end
 
 
 # call functions
-define_sets!(m, data, network, demand, wind_cf, pv_cf)
-process_time_series_data!(m, demand, wind_cf, pv_cf)
+define_sets!(m, data, network)  
+process_time_series_data!(m, dem, sol, won, woff)
 process_parameters!(m, data, network)
 
 
-function find_line_number(network::Dict, cities::Vector)
+function find_line_number(network::Dict, countries::Vector)
     for (name, line) in network
-        if line["Connection"] == cities
+        if line["Connection"] == countries
             # Return the line number if the cities match
             return parse(Int, split(name, "_")[2])
         end
@@ -256,7 +264,7 @@ function find_line_number(network::Dict, cities::Vector)
     return nothing
 end
 
-#test = find_line_number(network["DC_Lines"], ["Rome", "Sardinia"])
+#test = find_line_number(network["DC_Lines"], ["UK", "FR"])
 
 ## Step 3: construct your model
 function build_model!(m::Model)
@@ -264,11 +272,6 @@ function build_model!(m::Model)
     m.ext[:variables] = Dict()
     m.ext[:expressions] = Dict()
     m.ext[:constraints] = Dict()
-
-    # Get the list of generator types to remove
-    types_to_remove = ["SPP_lignite", "SPP_coal", "CCGT_old"]
-    # Remove the specified generator types from the set I
-    m.ext[:sets][:I] = filter(x -> !(x in types_to_remove), m.ext[:sets][:I])
 
     # Extract sets
     J = m.ext[:sets][:J] # Timesteps
@@ -282,7 +285,8 @@ function build_model!(m::Model)
 
     # Extract time series data
     D = m.ext[:timeseries][:D]
-    AFW = m.ext[:timeseries][:AFW]
+    AFWON = m.ext[:timeseries][:AFWON]
+    AFWOFF = m.ext[:timeseries][:AFWOFF]
     AFS = m.ext[:timeseries][:AFS]
 
     # Extract parameters
@@ -351,10 +355,12 @@ function build_model!(m::Model)
     con_varldc1 = m.ext[:constraints][:con_varldc1] = @constraint(m, [j=J,ld=L_dc], pl[j,ld] <= varldc[ld]) # Upper Limit Power Flow DC
     con_varldc2 = m.ext[:constraints][:con_varldc2] = @constraint(m, [j=J,ld=L_dc], -varldc[ld] <= pl[j,ld]) # Lower Limit Power Flow DC
     con_θb = m.ext[:constraints][:con_θb] = @constraint(m, [j=J,n=N], -pi <= θ[j,n] <= pi) # Bound Voltage angles
-    con_θref = m.ext[:constraints][:con_θref] = @constraint(m, [j=J], θ[j,"Rome"] == 0.0) # Voltage angle at ref node
+    con_θref = m.ext[:constraints][:con_θref] = @constraint(m, [j=J], θ[j,"BE"] == 0.0) # Voltage angle at ref node
     con_DGl = m.ext[:constraints][:con_DGl] = @constraint(m, [i=ID, j=J, n=N], g[i,j,n] <= AF[i]*cap[i,n]) # Dispatchable generation limit
     con_SGl = m.ext[:constraints][:con_SGl] = @constraint(m, [i=["Solar"], j=J, n=N], g[i,j,n] <= AFS[Symbol(n)][j]*AF[i]*cap[i,n]) # Solar generation limit
-    con_WGl = m.ext[:constraints][:con_WGl] = @constraint(m, [i=["WindOnshore", "WindOffshore"], j=J, n=N], g[i,j,n] <= AFW[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
+    con_WONGl = m.ext[:constraints][:con_WONGl] = @constraint(m, [i=["WindOnshore"], j=J, n=N], g[i,j,n] <= AFWON[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
+    con_WOFFGl = m.ext[:constraints][:con_WOFFGl] = @constraint(m, [i=["WindOffshore"], j=J, n=intersect(countries, countries_windoff)], g[i,j,n] <= AFWOFF[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
+
 end
 
 
