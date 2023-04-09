@@ -382,7 +382,7 @@ print(
 
 ## Step 5: Visualization
 
-define_sets!(m, data, network, demand, wind_cf, pv_cf)
+define_sets!(m, data, network)  
 
 
 # Dictionary to store the generators capacity for each node 
@@ -424,8 +424,31 @@ xticks=(1:length(nodes), nodes),
 label= ["Biomass" "WindOffshore" "CCGT_new" "WindOnshore" "Nuclear" "Solar" "OCGT" "ICE"],
 color_palette= Generator_colors)
 
-# Plot transmission map
-transmission = plot_transmission_network_italy()
+function plot_transmission_capacities(dict1::Dict, dict2::Dict)
+    countries = unique([k[1] for k in keys(dict1)] ∪ [k[2] for k in keys(dict1)] ∪ [k[1] for k in keys(dict2)] ∪ [k[2] for k in keys(dict2)])
+
+    # Create a matrix of capacity values
+    capacity_matrix = zeros(length(countries), length(countries))
+    for (k, v) in dict1
+        i = findfirst(countries .== k[1])
+        j = findfirst(countries .== k[2])
+        capacity_matrix[i, j] = v
+    end
+    for (k, v) in dict2
+        i = findfirst(countries .== k[1])
+        j = findfirst(countries .== k[2])
+        capacity_matrix[i, j] += v
+    end
+    
+    # Plot the heatmap
+    heatmap(countries, countries, capacity_matrix, c=:blues, aspect_ratio=:equal, xlabel="To country", ylabel="From country", title="Capacity needed for different links")
+end
+
+# Plot transmission map and capacities
+transmission_map = plot_transmission_network_italy()
+transmission_cap = plot_transmission_capacities(trans_ac_dict, trans_dc_dict)
 
 # Plot side by side
-plot(generation, transmission, layout=(1,2), size=(800,400))
+plot(generation, transmission_map, transmission_cap, layout=(1,3), size=(1800,600))
+
+
