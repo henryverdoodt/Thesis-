@@ -23,7 +23,7 @@ using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyCha
 using StatsPlots, Images
 
 # Transmission Network Italy
-function plot_transmission_network_italy()
+function plot_transmission_network()
 	img 	= load("/Users/henryverdoodt/Documents/CODE/IMAGES/europe_map.jpeg");
     countries = Dict("Spain" => (380, 1400), "France" => (640, 1140), "Belgium" => (722, 960), "Germany" => (880, 960), 
                  "Netherlands" => (745, 885), "Denmark" => (866, 720), "Norway" => (890, 482), "United Kingdom" => (553, 835))
@@ -79,7 +79,7 @@ function plot_transmission_network_italy()
 			 color="black", label=:none)
 end
 
-plot_transmission_network_italy()
+plot_transmission_network()
 
 # Read the CSV file into a DataFrame
 demand = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/DEMAND/PECD-country-demand_national_estimates-2025.csv", DataFrame)
@@ -424,6 +424,92 @@ xticks=(1:length(nodes), nodes),
 label= ["Biomass" "WindOffshore" "CCGT_new" "WindOnshore" "Nuclear" "Solar" "OCGT" "ICE"],
 color_palette= Generator_colors)
 
+# Transmission Network Italy
+function plot_transmission_needed(dict1::Dict, dict2::Dict)
+	img 	= load("/Users/henryverdoodt/Documents/CODE/IMAGES/europe_map.jpeg");
+    countries = Dict("Spain" => (380, 1400), "France" => (640, 1140), "Belgium" => (722, 960), "Germany" => (880, 960), 
+                 "Netherlands" => (745, 885), "Denmark" => (866, 720), "Norway" => (890, 482), "United Kingdom" => (553, 835))
+
+	plot(img, axis=([], false))
+    if dict1[["ES", "FR"]] != 0.0
+        plot!([countries["Spain"][1],countries["France"][1]],
+		    [countries["Spain"][2],countries["France"][2]],
+		    color="blue", linewidth=2, label="HVAC")
+    end
+	if dict1[["FR", "BE"]] != 0.0
+	    plot!([countries["France"][1],countries["Belgium"][1]],
+		    [countries["France"][2],countries["Belgium"][2]],
+		    color="blue", linewidth=2, label=:none)
+    end
+    if dict1[["FR", "DE"]] != 0.0
+	    plot!([countries["France"][1],countries["Germany"][1]],
+		    [countries["France"][2],countries["Germany"][2]],
+		    color="blue", linewidth=2, label=:none)
+    end
+    if dict1[["BE", "DE"]] != 0.0
+	    plot!([countries["Germany"][1],countries["Belgium"][1]],
+		     [countries["Germany"][2],countries["Belgium"][2]],
+		     color="blue", linewidth=2, label=:none)
+    end
+    if dict1[["BE", "NL"]] != 0.0
+        plot!([countries["Belgium"][1],countries["Netherlands"][1]],
+		    [countries["Belgium"][2],countries["Netherlands"][2]],
+		    color="blue", linewidth=2, label=:none)
+    end
+    if dict1[["NL", "DE"]] != 0.0
+	    plot!([countries["Netherlands"][1],countries["Germany"][1]],
+		    [countries["Netherlands"][2],countries["Germany"][2]],
+		    color="blue", linewidth=2, label=:none)
+    end
+    if dict1[["DK", "DE"]] != 0.0
+	    plot!([countries["Germany"][1],countries["Denmark"][1]],
+		    [countries["Germany"][2],countries["Denmark"][2]],
+		    color="blue", linewidth=2, label=:none)
+    end
+
+
+    if dict2[["UK", "FR"]] != 0.0
+	    plot!([countries["France"][1],countries["United Kingdom"][1]],
+		    [countries["France"][2],countries["United Kingdom"][2]],
+		    color="red", linewidth=2, label="HVDC")
+    end
+    if dict2[["UK", "BE"]] != 0.0
+	    plot!([countries["United Kingdom"][1],countries["Belgium"][1]],
+		    [countries["United Kingdom"][2],countries["Belgium"][2]],
+		    color="red", linewidth=2, label=:none)
+    end
+    if dict2[["UK", "NO"]] != 0.0
+        plot!([countries["United Kingdom"][1],countries["Norway"][1]],
+		    [countries["United Kingdom"][2],countries["Norway"][2]],
+		    color="red", linewidth=2, label=:none)
+    end
+    if dict2[["NO", "BE"]] != 0.0
+	    plot!([countries["Norway"][1],countries["Belgium"][1]],
+		    [countries["Norway"][2],countries["Belgium"][2]],
+		    color="red", linewidth=2, label=:none)
+    end
+    if dict2[["NO", "NL"]] != 0.0
+        plot!([countries["Norway"][1],countries["Netherlands"][1]],
+		    [countries["Norway"][2],countries["Netherlands"][2]],
+		    color="red", linewidth=2, label=:none)
+    end
+    if dict2[["NO", "DK"]] != 0.0
+	    plot!([countries["Norway"][1],countries["Denmark"][1]],
+		    [countries["Norway"][2],countries["Denmark"][2]],
+		    color="red", linewidth=2, label=:none)
+    end
+    if dict2[["DK", "NL"]] != 0.0
+        plot!([countries["Netherlands"][1],countries["Denmark"][1]],
+		    [countries["Netherlands"][2],countries["Denmark"][2]],
+		    color="red", linewidth=2, label=:none)
+    end
+
+	# Dots for Nodes
+	scatter!([nc[1] for nc in values(countries)],
+			 [nc[2] for nc in values(countries)], markersize=3,
+			 color="black", label=:none)
+end
+
 function plot_transmission_capacities(dict1::Dict, dict2::Dict)
     countries = unique([k[1] for k in keys(dict1)] ∪ [k[2] for k in keys(dict1)] ∪ [k[1] for k in keys(dict2)] ∪ [k[2] for k in keys(dict2)])
 
@@ -445,7 +531,7 @@ function plot_transmission_capacities(dict1::Dict, dict2::Dict)
 end
 
 # Plot transmission map and capacities
-transmission_map = plot_transmission_network_italy()
+transmission_map = plot_transmission_needed(trans_ac_dict, trans_dc_dict)
 transmission_cap = plot_transmission_capacities(trans_ac_dict, trans_dc_dict)
 
 # Plot side by side
