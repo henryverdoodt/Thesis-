@@ -1,0 +1,25 @@
+HVDC Line,Connection,Length (km),Capacity (MW),Total Cost (Euros),Cost per length per capacity (Euros/km.MW)
+Three Gorges - Changzhou,China,1200,7000,2.5 billion,30.5k
+SAPEI,Brazil,2031,3150,2.7 billion,42.7k
+South-West to Central,China,1738,6400,2.4 billion,47.1k
+Pacific DC Intertie,USA,1350,3100,2 billion,48.3k
+North-East Agra,India,1860,8000,1.9 billion,30.1k
+Itaipu,Brazil/Paraguay,800,6300,1.5 billion,31.2k
+Cross-Skagerrak,Norway/Denmark,250,600,200 million,13.3k
+Baltic Cable,Germany/Sweden,250,600,350 million,23.3k
+Basslink,Australia,370,500,1.1 billion,47.2k
+Estlink,Estonia/Finland,172,350,110 million,18.3k
+BritNed,United Kingdom/Netherlands,260,1000,700 million,26.9k
+Kontek,Denmark/Germany,170,400,70 million,10.3k
+SACOI (South Africa - Congo - Zambia - Tanzania - Kenya - Uganda),Multiple countries in Africa,5000,800,1.5 billion,37.5k
+Rio Madeira HVDC system,Brazil,2374,3150,3.75 billion,49.8k
+China Southern Power Grid to Guangdong,China,941,5000,4.7 billion,202.1k
+Sylmar-Apollo,USA,1200,2400,80 million,27.8k
+Tucurui-Porto Velho,Brazil,2374,2000,1.4 billion,29.4k
+Manitoba-Minnesota,Canada/USA,860,2000,625 million,44.1k
+Cahora Bassa,Mozambique/South Africa,1410,1920,480 million,16.4k
+Ximeng-Taizhou,China,1914,6400,2.5 billion,40.6k
+Cote-Nord,Canada,450,2000,556 million,62.9k
+Inga-Shaba,Democratic Republic of Congo,1800,1000,750 million,41.7k
+Bosphorus,Turkey,70,1000,300 million,428.6k
+Rio Negro,Brazil,700,1400,250 million,25.5k

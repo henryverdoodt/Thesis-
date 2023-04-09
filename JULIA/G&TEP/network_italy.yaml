@@ -1,0 +1,81 @@
+Nodes:
+  Node_1: "Rome"
+  Node_2: "Florence"
+  Node_3: "Bari"
+  Node_4: "Milaan"
+  Node_5: "Palermo"
+  Node_6: "Sardinia"
+
+Bl_ac: 5 # μS/km -> Source ChatGPT: in the range of 1 to 10 μS/km
+Bl_dc: 0.5 # μS/km -> Source ChatGPT: in the range of 0.1 to 1 μS/km
+Lifetime_ac: 40 # years, assumption lifetime of a HVAC
+Lifetime_dc: 40 # years, assumption lifetime of a HVDC
+
+
+AC_Lines:
+ AC_1:
+  Connection: ["Florence", "Rome"]
+  Length: 232 # km
+  Price: 31280 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ AC_2:
+  Connection: ["Rome", "Bari"]
+  Length: 384 # km
+  Price: 31280 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ AC_3:
+  Connection: ["Milaan", "Florence"]
+  Length: 249 # km
+  Price: 31280 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ AC_4:
+  Connection: ["Milaan", "Rome"]
+  Length: 476 # km
+  Price: 31280 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ AC_5:
+  Connection: ["Milaan", "Bari"]
+  Length: 706 # km
+  Price: 31280 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ AC_6:
+  Connection: ["Florence", "Bari"]
+  Length: 542 # km
+  Price: 31280 # EUR/km.MW
+  Capacity: 6000 # MW
+
+DC_Lines:
+ DC_1:
+  Connection: ["Rome", "Palermo"]
+  Length: 423 # km
+  Price: 41150 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ DC_2:
+  Connection: ["Sardinia", "Palermo"]
+  Length: 418 # km
+  Price: 41150 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ DC_3:
+  Connection: ["Bari", "Palermo"]
+  Length: 596 # km
+  Price: 41150 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ DC_4:
+  Connection: ["Florence", "Sardinia"]
+  Length: 484 # km
+  Price: 41150 # EUR/km.MW
+  Capacity: 6000 # MW
+
+ DC_5:
+  Connection: ["Rome", "Sardinia"]
+  Length: 413 # km
+  Price: 41150 # EUR/km.MW
+  Capacity: 6000 # MW

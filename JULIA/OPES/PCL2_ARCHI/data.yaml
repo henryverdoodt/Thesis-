@@ -1,0 +1,82 @@
+# Number of units per type needs to be less than 10!
+valueOfLostLoad: 1000 # EUR / MWh
+CO2Price: 25 # EUR / ton
+timeStepLength: 1 # hrs
+
+dispatchableGenerators:
+ Nuclear:
+  numberOfUnits: 3 # number of units
+  maxPowerOutput: 1200 # MW
+  minStableOperatingPoint: 1000 # MW
+  rampUpRate: 0.025 # fraction of max power output/min
+  rampDownRate: 0.025 # fraction of max power output/min
+  startupRate: 1000 # MW
+  shutdownRate: 1000 # MW
+  minUpTime: 8 # hours
+  minDownTime: 8 # hours
+  effmin: 0.3 # efficiency at minimum stable operating point
+  effmax: 0.33 # efficiency at maximum power output
+  fuelcost: 3 # EUR/MWh of primary fuel input
+  carbonintensity: 0 # tCO2/MWh of primary fuel input
+  startupenergy: 3.9 # MWh of primary fuel per MW of installed capacity
+
+ Coal:
+  numberOfUnits: 2 # number of units
+  maxPowerOutput: 800 # MW
+  minStableOperatingPoint: 500 # MW
+  rampUpRate: 0.02 # fraction of max power output/min
+  rampDownRate: 0.02 # fraction of max power output/min
+  startupRate: 600 # MW
+  shutdownRate: 600 # MW
+  minUpTime: 6 # hours
+  minDownTime: 3 # hours
+  effmin: 0.37 # efficiency at minimum stable operating point
+  effmax: 0.40 # efficiency at maximum power output
+  fuelcost: 10 # EUR/MWh of primary fuel input
+  carbonintensity: 0.34 # tCO2/MWh of primary fuel input
+  startupenergy: 13.9 # MWh of primary fuel per MW of installed capacity
+
+ CCGT:
+   numberOfUnits: 4 # number of units
+   maxPowerOutput: 450 # MW
+   minStableOperatingPoint: 175 # MW
+   startupRate: 400 # MW
+   shutdownRate: 400 # MW
+   rampUpRate: 0.06 # fraction of max power output/min
+   rampDownRate: 0.06 # fraction of max power output/min
+   minUpTime: 2 # hours
+   minDownTime: 1 # hours
+   effmin: 0.43 # efficiency at minimum stable operating point
+   effmax: 0.55 # efficiency at maximum power output
+   fuelcost: 20 # EUR/MWh of primary fuel input
+   carbonintensity: 0.21 # tCO2/MWh of primary fuel input
+   startupenergy: 1.9 # MWh of primary fuel per MW of installed capacity
+
+ OCGT:
+    numberOfUnits: 5 # number of units
+    maxPowerOutput: 50 # MW
+    minStableOperatingPoint: 15 # MW
+    rampUpRate: 0.1 # fraction of max power output/min
+    rampDownRate: 0.1   # fraction of max power output/min
+    startupRate: 50 # MW
+    shutdownRate: 50 # MW
+    minUpTime: 1 # hours
+    minDownTime: 1 # hours
+    effmin: 0.26 # efficiency at minimum stable operating point
+    effmax: 0.40 # efficiency at maximum power output
+    fuelcost: 20 # EUR/MWh of primary fuel input
+    carbonintensity: 0.21 # tCO2/MWh of primary fuel input
+    startupenergy: 0 # MWh of primary fuel per MW of installed capacity
+
+variableGenerators:
+ Solar:
+  installedCapacity: 6000 # MW
+ Wind:
+  installedCapacity: 6000 # MW
+
+Storage:
+  Pmax: 1000 # MW -> ̅D = ̅C = Pmax
+  Emax: 4000 # MWh -> ̅E
+  eff: 0.9 # Round-trip efficiency -> ηc = ηd = sqrt(eff)
+  Einit: 2000 # MWh, starting value state of charge -> e_0
+  Efinal: 2000 # MWh, starting value state of charge -> e_J
