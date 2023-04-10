@@ -3,7 +3,7 @@
 # Last update: April 4, 2023
 
 ## Step 0: Activate environment - ensure consistency accross computers
-#= using Pkg
+using Pkg
 Pkg.activate(@__DIR__) # @__DIR__ = directory this script is in
 Pkg.instantiate() # If a Manifest.toml file exist in the current project, download all the packages declared in that manifest. Else, resolve a set of feasible packages from the Project.toml files and install them.
 Pkg.add("InteractiveUtils")
@@ -17,7 +17,7 @@ Pkg.add("Plots")
 Pkg.add("PolyChaos")
 Pkg.add("YAML")
 Pkg.add("StatsPlots")
-Pkg.add("Images")  =#
+Pkg.add("Images") 
 
 using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyChaos, InteractiveUtils
 using StatsPlots, Images
@@ -344,9 +344,9 @@ function build_model!(m::Model)
     println(IC_l_AC[2])
     println([network["AC_Lines"]["AC_$(la)"]["Connection"] for la in 1:6])
     =#
-
+                                                                                            # sum(Pl[l] for l in L if l[1] == n; init=0)
     # Constraints
-    con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in I) + sum(pl[j,l] for l in L) == D[Symbol(n)][j] - ens[j,n]) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
+    con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in I) + sum(pl[j,l] for l in L if l[1] == n; init=0) == D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0)) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
     con_LoL = m.ext[:constraints][:con_LoL] = @constraint(m, [j=J,n=N], 0 <= ens[j,n] <= D[Symbol(n)][j]) # Loss of Load constraint
     con_PFap_ac = m.ext[:constraints][:con_PFap_ac] = @constraint(m, [j=J,la=L_ac], pl[j,la] == Bl_ac*(θ[j,la[1]] - θ[j,la[2]])) # 'DC' Power Flow Approximation # θ should have a node as argument but l[x] is a node 
     con_PFap_dc = m.ext[:constraints][:con_PFap_dc] = @constraint(m, [j=J,ld=L_dc], pl[j,ld] == Bl_dc*(θ[j,ld[1]] - θ[j,ld[2]])) # 'DC' Power Flow Approximation # θ should have a node as argument but l[x] is a node 
@@ -362,7 +362,6 @@ function build_model!(m::Model)
     con_WOFFGl = m.ext[:constraints][:con_WOFFGl] = @constraint(m, [i=["WindOffshore"], j=J, n=intersect(countries, countries_windoff)], g[i,j,n] <= AFWOFF[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
 
 end
-
 
 # Build model
 build_model!(m)
@@ -381,12 +380,14 @@ print(
 @show value(m.ext[:objective])
 
 ## Step 5: Visualization
-
-define_sets!(m, data, network)  
-
+ 
+N = m.ext[:sets][:Nodes]
+I = m.ext[:sets][:I]
+L_ac = m.ext[:sets][:AC_Lines] 
+L_dc = m.ext[:sets][:DC_Lines]
 
 # Dictionary to store the generators capacity for each node 
-gen_dict = Dict{String, Dict{String, Float64}}()
+gen_dict = Dict{String, Dict{String, Float64}}()  
 for node in N
     gen_dict[node] = Dict((gen => 0.0 for gen in I)...)
     for unit in I
@@ -531,6 +532,7 @@ function plot_transmission_capacities(dict1::Dict, dict2::Dict)
 end
 
 # Plot transmission map and capacities
+transmission = plot_transmission_network()
 transmission_map = plot_transmission_needed(trans_ac_dict, trans_dc_dict)
 transmission_cap = plot_transmission_capacities(trans_ac_dict, trans_dc_dict)
 
