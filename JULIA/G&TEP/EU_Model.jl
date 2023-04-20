@@ -3,7 +3,7 @@
 # Last update: April 4, 2023
 
 ## Step 0: Activate environment - ensure consistency accross computers
-using Pkg
+#= using Pkg
 Pkg.activate(@__DIR__) # @__DIR__ = directory this script is in
 Pkg.instantiate() # If a Manifest.toml file exist in the current project, download all the packages declared in that manifest. Else, resolve a set of feasible packages from the Project.toml files and install them.
 Pkg.add("InteractiveUtils")
@@ -17,7 +17,7 @@ Pkg.add("Plots")
 Pkg.add("PolyChaos")
 Pkg.add("YAML")
 Pkg.add("StatsPlots")
-Pkg.add("Images") 
+Pkg.add("Images")  =#
 
 using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyChaos, InteractiveUtils
 using StatsPlots, Images
@@ -299,6 +299,7 @@ function build_model!(m::Model)
         ### parameters of generators per unit
     VC = m.ext[:parameters][:VC]
     IC = m.ext[:parameters][:IC]
+    AF = m.ext[:parameters][:AF]
 
         ### parameters of transmission lines
     IC_var_AC = m.ext[:parameters][:IC_var_AC]
@@ -360,6 +361,7 @@ function build_model!(m::Model)
     con_SGl = m.ext[:constraints][:con_SGl] = @constraint(m, [i=["Solar"], j=J, n=N], g[i,j,n] <= AFS[Symbol(n)][j]*AF[i]*cap[i,n]) # Solar generation limit
     con_WONGl = m.ext[:constraints][:con_WONGl] = @constraint(m, [i=["WindOnshore"], j=J, n=N], g[i,j,n] <= AFWON[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
     con_WOFFGl = m.ext[:constraints][:con_WOFFGl] = @constraint(m, [i=["WindOffshore"], j=J, n=intersect(countries, countries_windoff)], g[i,j,n] <= AFWOFF[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
+    con_CWO_WOFF = m.ext[:constraints][:con_CWO_WOFF] = @constraint(m, [i=["WindOffshore"], j=J, n=setdiff(countries, countries_windoff)], g[i,j,n] == 0.0) # No wind offshore in these countries
 
 end
 
@@ -528,7 +530,7 @@ function plot_transmission_capacities(dict1::Dict, dict2::Dict)
     end
     
     # Plot the heatmap
-    heatmap(countries, countries, capacity_matrix, c=:blues, aspect_ratio=:equal, xlabel="To country", ylabel="From country", title="Capacity needed for different links")
+    heatmap(countries, countries, capacity_matrix, c=:blues, aspect_ratio=:equal, xlabel="To country", ylabel="From country", title="Capacity needed for different links (MW)")
 end
 
 # Plot transmission map and capacities

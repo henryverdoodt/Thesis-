@@ -18,7 +18,7 @@ using CSV, DataFrames, Plots, Statistics
 df = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/DEMAND/ED_CL_E_DAY_RCP8_ALADIN_CNRM_1971_2100.csv", DataFrame)
 
 ##### PARAMETERS #####
-count = "Spain" # Name of Country
+count = "Belgium" # Name of Country
 
 # Dictionaries with countries name, abreviation, number FOR DEMAND
 countries_dict = Dict("Austria" => "AT", "Bosnia and Herzegovina" => "BA", "Belgium" => "BE", "Bulgaria" => "BG", "Switzerland" => "CH", "Czech Republic" => "CZ", "Germany" => "DE",
@@ -223,7 +223,7 @@ windon = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDON/PECD-20
 windoff = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDOFF/PECD-2021.3-country-Offshore-2025.csv", DataFrame)
 
 ##### PARAMETERS #####
-count = "Belgium" # Name of Country
+count = "Norway" # Name of Country
 
 countries = Dict("Albania" => "AL","Austria" => "AT", "Bosnia and Herzegovina" => "BA","Belgium" => "BE","Bulgaria" => "BG","Switzerland" => "CH","Cyprus" => "CY","Czech Republic" => "CZ","Germany" => "DE","Denmark" => "DK",
                         "Estonia" => "EE","Spain" => "ES", "Finland" => "FI", "France" => "FR", "Greece" => "GR", "Croatia" => "HR", "Hungary" => "HU", "Ireland" => "IE", "Italy" => "IT", "Lithuania" => "LT",
@@ -318,7 +318,7 @@ using CSV, DataFrames, Plots, Statistics, Dates
 windon = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDON/PECD-2021.3-country-Onshore-2025.csv", DataFrame)
 
 ##### PARAMETERS #####
-count = "Spain" # Name of Country
+count = "Norway" # Name of Country
 season = "summer"
 y1 = 1982.0
 y2 = 2000.0
@@ -353,23 +353,23 @@ daily_avg3 = combine(groupby(df_subset3, [:month, :day]), :cf => mean => :cf)
 # Plot Daily CF dots for one season
 locations = [16,46,77]
 month_num = seasons[season]
-p1 = plot(1:size(daily_avg1, 1), daily_avg1.cf, xlabel="$season months", ylabel="Capacity Factor", title= "Seasonal Evolution of WindOnCapacity Factor of $count for $season", xticks=(locations, month_num), label=y1,)
-plot!(1:size(daily_avg2, 1), daily_avg2.cf, xlabel="$season months", ylabel="Capacity Factor", title= "Seasonal Evolution of WindOn Capacity Factor of $count for $season", label=y2,)
-plot!(1:size(daily_avg3, 1), daily_avg3.cf, xlabel="$season months", ylabel="Capacity Factor", title= "Seasonal Evolution of WindOn Capacity Factor of $count for $season", label=y3,)
+p1 = plot(1:size(daily_avg1, 1), daily_avg1.cf, xlabel="$season months", ylabel="Capacity Factor", title= "WindOn Capacity Factor - $season months $count", xticks=(locations, month_num), label=y1,)
+plot!(1:size(daily_avg2, 1), daily_avg2.cf, xlabel="$season months", ylabel="Capacity Factor", title= "WindOn Capacity Factor - $season months $count", label=y2,)
+plot!(1:size(daily_avg3, 1), daily_avg3.cf, xlabel="$season months", ylabel="Capacity Factor", title= "WindOn Capacity Factor - $season months $count", label=y3,)
 
 # Plot Hourly CF dots for one day of one season
 locations = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
 hours = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
-p2 = plot(1:size(hourly_avg1, 1), hourly_avg1.cf, xlabel="$season day", ylabel="Capacity Factor", title= "Daily Evolution of WindOn Capacity Factor of $count for $season", xticks=(locations, hours), label=y1,)
-plot!(1:size(hourly_avg2, 1), hourly_avg2.cf, xlabel="$season day", ylabel="Capacity Factor", title= "Daily Evolution of WindOn Capacity Factor of $count for $season", label=y2,)
-plot!(1:size(hourly_avg3, 1), hourly_avg3.cf, xlabel="$season day", ylabel="Capacity Factor", title= "Daily Evolution of WindOn Capacity Factor of $count for $season", label=y3,)
+p2 = plot(1:size(hourly_avg1, 1), hourly_avg1.cf, xlabel="$season day", ylabel="Capacity Factor", title= "WindOn Capacity Factor - $season day $count", xticks=(locations, hours), label=y1,)
+plot!(1:size(hourly_avg2, 1), hourly_avg2.cf, xlabel="$season day", ylabel="Capacity Factor", title= "WindOn Capacity Factor - $season day $count", label=y2,)
+plot!(1:size(hourly_avg3, 1), hourly_avg3.cf, xlabel="$season day", ylabel="Capacity Factor", title= "WindOn Capacity Factor - $season day $count", label=y3,)
 
 # Plot Hourly CF dots for one season
 locations = [372,1116,1860]
 month_num = seasons[season]
-p3 = plot(1:size(df_subset1, 1), df_subset1.cf, xlabel="$season months", ylabel="Capacity Factor", title= "Seasonal Evolution of WindOn Capacity Factor of $count for $season", xticks=(locations, month_num), label=y1,)
-plot!(1:size(df_subset2, 1), df_subset2.cf, xlabel="$season months", ylabel="Capacity Factor", title= "Seasonal Evolution of WindOn Capacity Factor of $count for $season", label=y2,)
-plot!(1:size(df_subset3, 1), df_subset3.cf, xlabel="$season months", ylabel="Capacity Factor", title= "Seasonal Evolution of WindOn Capacity Factor of $count for $season", label=y3,)
+p3 = plot(1:size(df_subset1, 1), df_subset1.cf, xlabel="$season months", ylabel="Capacity Factor", title= "WindOn Capacity Factor - $season months $count", xticks=(locations, month_num), label=y1,)
+plot!(1:size(df_subset2, 1), df_subset2.cf, xlabel="$season months", ylabel="Capacity Factor", title= "WindOn Capacity Factor - $season months $count", label=y2,)
+plot!(1:size(df_subset3, 1), df_subset3.cf, xlabel="$season months", ylabel="Capacity Factor", title= "WindOn Capacity Factor - $season months $count", label=y3,)
 
 plot(p1, p2, layout=(1,2), size=(1600,600))
 
