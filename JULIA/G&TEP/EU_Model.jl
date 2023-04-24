@@ -1,6 +1,6 @@
 ## Master Thesis: Analyse the impact of climate change on a G&TEP of EU Power System
 # Author: Henry Verdoodt
-# Last update: April 4, 2023
+# Last update: April 20, 2023
 
 ## Step 0: Activate environment - ensure consistency accross computers
 #= using Pkg
@@ -22,7 +22,7 @@ Pkg.add("Images")  =#
 using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyChaos, InteractiveUtils
 using StatsPlots, Images
 
-# Transmission Network Italy
+# Transmission Network West Europe
 function plot_transmission_network()
 	img 	= load("/Users/henryverdoodt/Documents/CODE/IMAGES/europe_map.jpeg");
     countries = Dict("Spain" => (380, 1400), "France" => (640, 1140), "Belgium" => (722, 960), "Germany" => (880, 960), 
@@ -104,7 +104,7 @@ countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
 dem = DataFrame(col1 = Float64[])
 for c in intersect(countries, countries_demand)
     demand1 = dropmissing(demand[demand.country .== c, [:year, :dem_MW]], disallowmissing=true)
-    demand2 = dropmissing(demand1[demand1.year .== 2016.0, [:dem_MW]], disallowmissing=true)
+    demand2 = dropmissing(demand1[demand1.year .== y, [:dem_MW]], disallowmissing=true)
     rename!(demand2, :dem_MW => c)
     if isempty(dem)
         dem = hcat(demand2)
@@ -116,7 +116,7 @@ end
 sol = DataFrame(col1 = Float64[])
 for c in intersect(countries, countries_solar)
     solar1 = dropmissing(solar[solar.country .== c, [:year, :cf]], disallowmissing=true)
-    solar2 = dropmissing(solar1[solar1.year .== 2016.0, [:cf]], disallowmissing=true)
+    solar2 = dropmissing(solar1[solar1.year .== y, [:cf]], disallowmissing=true)
     rename!(solar2, :cf => c)
     if isempty(sol)
         sol = hcat(solar2)
@@ -128,7 +128,7 @@ end
 won = DataFrame(col1 = Float64[])
 for c in intersect(countries, countries_windon)
     windon1 = dropmissing(windon[windon.country .== c, [:year, :cf]], disallowmissing=true)
-    windon2 = dropmissing(windon1[windon1.year .== 2016.0, [:cf]], disallowmissing=true)
+    windon2 = dropmissing(windon1[windon1.year .== y, [:cf]], disallowmissing=true)
     rename!(windon2, :cf => c)
     if isempty(won)
         won = hcat(windon2)
@@ -141,7 +141,7 @@ end
 woff = DataFrame(col1 = Float64[])
 for c in intersect(countries, countries_windoff)
     windoff1 = dropmissing(windoff[windoff.country .== c, [:year, :cf]], disallowmissing=true)
-    windoff2 = dropmissing(windoff1[windoff1.year .== 2016.0, [:cf]], disallowmissing=true)
+    windoff2 = dropmissing(windoff1[windoff1.year .== y, [:cf]], disallowmissing=true)
     rename!(windoff2, :cf => c)
     if isempty(woff)
         woff = hcat(windoff2)
@@ -149,7 +149,6 @@ for c in intersect(countries, countries_windoff)
         woff = hcat(woff, windoff2)
     end
 end
-
 
 
 ## Step 2: create model & pass data to model
@@ -347,22 +346,29 @@ function build_model!(m::Model)
     =#
                                                                                             # sum(Pl[l] for l in L if l[1] == n; init=0)
     # Constraints
-    con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in I) + sum(pl[j,l] for l in L if l[1] == n; init=0) == D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0)) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
-    con_LoL = m.ext[:constraints][:con_LoL] = @constraint(m, [j=J,n=N], 0 <= ens[j,n] <= D[Symbol(n)][j]) # Loss of Load constraint
-    con_PFap_ac = m.ext[:constraints][:con_PFap_ac] = @constraint(m, [j=J,la=L_ac], pl[j,la] == Bl_ac*(θ[j,la[1]] - θ[j,la[2]])) # 'DC' Power Flow Approximation # θ should have a node as argument but l[x] is a node 
-    con_PFap_dc = m.ext[:constraints][:con_PFap_dc] = @constraint(m, [j=J,ld=L_dc], pl[j,ld] == Bl_dc*(θ[j,ld[1]] - θ[j,ld[2]])) # 'DC' Power Flow Approximation # θ should have a node as argument but l[x] is a node 
-    con_varlac1 = m.ext[:constraints][:con_varlac1] = @constraint(m, [j=J,la=L_ac], pl[j,la] <= varlac[la]) # Upper Limit Power Flow AC
-    con_varlac2 = m.ext[:constraints][:con_varlac2] = @constraint(m, [j=J,la=L_ac], -varlac[la] <= pl[j,la]) # Lower Limit Power Flow AC
-    con_varldc1 = m.ext[:constraints][:con_varldc1] = @constraint(m, [j=J,ld=L_dc], pl[j,ld] <= varldc[ld]) # Upper Limit Power Flow DC
-    con_varldc2 = m.ext[:constraints][:con_varldc2] = @constraint(m, [j=J,ld=L_dc], -varldc[ld] <= pl[j,ld]) # Lower Limit Power Flow DC
-    con_θb = m.ext[:constraints][:con_θb] = @constraint(m, [j=J,n=N], -pi <= θ[j,n] <= pi) # Bound Voltage angles
-    con_θref = m.ext[:constraints][:con_θref] = @constraint(m, [j=J], θ[j,"BE"] == 0.0) # Voltage angle at ref node
     con_DGl = m.ext[:constraints][:con_DGl] = @constraint(m, [i=ID, j=J, n=N], g[i,j,n] <= AF[i]*cap[i,n]) # Dispatchable generation limit
     con_SGl = m.ext[:constraints][:con_SGl] = @constraint(m, [i=["Solar"], j=J, n=N], g[i,j,n] <= AFS[Symbol(n)][j]*AF[i]*cap[i,n]) # Solar generation limit
     con_WONGl = m.ext[:constraints][:con_WONGl] = @constraint(m, [i=["WindOnshore"], j=J, n=N], g[i,j,n] <= AFWON[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
     con_WOFFGl = m.ext[:constraints][:con_WOFFGl] = @constraint(m, [i=["WindOffshore"], j=J, n=intersect(countries, countries_windoff)], g[i,j,n] <= AFWOFF[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
     con_CWO_WOFF = m.ext[:constraints][:con_CWO_WOFF] = @constraint(m, [i=["WindOffshore"], j=J, n=setdiff(countries, countries_windoff)], g[i,j,n] == 0.0) # No wind offshore in these countries
+    #con_SOL_ES = m.ext[:constraints][:con_SOL_ES] = @constraint(m, [i=["Nuclear", "CCGT_new", "OCGT", "ICE", "Biomass", "WindOnshore"], j=J, n=["ES"]], g[i,j,n] == 0.0)
 
+    con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in I) + sum(pl[j,l] for l in L if l[1] == n; init=0) >= D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0)) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
+    con_LoL = m.ext[:constraints][:con_LoL] = @constraint(m, [j=J,n=N], 0 <= ens[j,n] <= D[Symbol(n)][j]) # Loss of Load constraint
+    #con_PFap_ac = m.ext[:constraints][:con_PFap_ac] = @constraint(m, [j=J,la=L_ac], pl[j,la] == Bl_ac*(θ[j,la[1]] - θ[j,la[2]])) # 'DC' Power Flow Approximation # θ should have a node as argument but l[x] is a node 
+    #con_PFap_dc = m.ext[:constraints][:con_PFap_dc] = @constraint(m, [j=J,ld=L_dc], pl[j,ld] == Bl_dc*(θ[j,ld[1]] - θ[j,ld[2]])) # 'DC' Power Flow Approximation # θ should have a node as argument but l[x] is a node 
+    con_varlac1 = m.ext[:constraints][:con_varlac1] = @constraint(m, [j=J,la=L_ac], pl[j,la] <= varlac[la]) # Upper Limit Power Flow AC
+    con_varlac2 = m.ext[:constraints][:con_varlac2] = @constraint(m, [j=J,la=L_ac], -varlac[la] <= pl[j,la]) # Lower Limit Power Flow AC
+    con_varldc1 = m.ext[:constraints][:con_varldc1] = @constraint(m, [j=J,ld=L_dc], pl[j,ld] <= varldc[ld]) # Upper Limit Power Flow DC
+    con_varldc2 = m.ext[:constraints][:con_varldc2] = @constraint(m, [j=J,ld=L_dc], -varldc[ld] <= pl[j,ld]) # Lower Limit Power Flow DC
+    #con_θb = m.ext[:constraints][:con_θb] = @constraint(m, [j=J,n=N], -pi <= θ[j,n] <= pi) # Bound Voltage angles
+    #con_θref = m.ext[:constraints][:con_θref] = @constraint(m, [j=J], θ[j,"BE"] == 0.0) # Voltage angle at ref node
+    #con_DGl = m.ext[:constraints][:con_DGl] = @constraint(m, [i=ID, j=J, n=N], g[i,j,n] <= AF[i]*cap[i,n]) # Dispatchable generation limit
+    #con_SGl = m.ext[:constraints][:con_SGl] = @constraint(m, [i=["Solar"], j=J, n=N], g[i,j,n] <= AFS[Symbol(n)][j]*AF[i]*cap[i,n]) # Solar generation limit
+    #con_WONGl = m.ext[:constraints][:con_WONGl] = @constraint(m, [i=["WindOnshore"], j=J, n=N], g[i,j,n] <= AFWON[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
+    #con_WOFFGl = m.ext[:constraints][:con_WOFFGl] = @constraint(m, [i=["WindOffshore"], j=J, n=intersect(countries, countries_windoff)], g[i,j,n] <= AFWOFF[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
+    #con_CWO_WOFF = m.ext[:constraints][:con_CWO_WOFF] = @constraint(m, [i=["WindOffshore"], j=J, n=setdiff(countries, countries_windoff)], g[i,j,n] == 0.0) # No wind offshore in these countries
+    #con_SOL_ES = m.ext[:constraints][:con_SOL_ES] = @constraint(m, [i=["Nuclear", "CCGT_new", "OCGT", "ICE", "Biomass", "WindOnshore"], j=J, n=["ES"]], g[i,j,n] == 0.0)
 end
 
 # Build model
