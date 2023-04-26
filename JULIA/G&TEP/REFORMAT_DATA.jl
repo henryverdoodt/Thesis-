@@ -19,6 +19,14 @@ Pkg.add("YAML")
 Pkg.add("StatsPlots")
 Pkg.add("Images")  =#
 
+#############################################################################################################################################################
+#############################################################################################################################################################
+###############################                                           ENTSO                                               ###############################
+#############################################################################################################################################################
+#############################################################################################################################################################
+
+
+
 using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyChaos, InteractiveUtils, StatsPlots, Images
 
 
@@ -87,3 +95,19 @@ for c in intersect(countries, countries_windoff)
     end
 end
 
+
+#############################################################################################################################################################
+#############################################################################################################################################################
+###############################                                        COPERNICUS                                             ###############################
+#############################################################################################################################################################
+#############################################################################################################################################################
+
+
+using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyChaos, InteractiveUtils, StatsPlots, Images
+
+
+# Read the CSV file into a DataFrame
+demand = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/DEMAND/PECD-country-demand_national_estimates-2025.csv", DataFrame)
+solar = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/SOLAR/PECD-2021.3-country-LFSolarPV-2025.csv", DataFrame)
+windon = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDON/PECD-2021.3-country-Onshore-2025.csv", DataFrame)
+windoff = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDOFF/PECD-2021.3-country-Offshore-2025.csv", DataFrame)

@@ -2,7 +2,7 @@
 
 julia_version = "1.8.5"
 manifest_format = "2.0"
-project_hash = "02b2f6023a18f835aebc2e1d9a856c94c219ea35"
+project_hash = "6a66f861c0a59f202138f1ff235db6dd54fc0222"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -938,6 +938,11 @@ git-tree-sha1 = "0877504529a3e5c3343c6f8b4c0381e57e4387e4"
 uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
 version = "1.0.2"
 
+[[deps.NamedTupleTools]]
+git-tree-sha1 = "90914795fc59df44120fe3fff6742bb0d7adb1d0"
+uuid = "d9ec5142-1e00-5aa0-9d6a-321866360f50"
+version = "0.14.3"
+
 [[deps.NearestNeighbors]]
 deps = ["Distances", "StaticArrays"]
 git-tree-sha1 = "2c3726ceb3388917602169bed973dbc97f1b51a8"
@@ -1213,6 +1218,14 @@ git-tree-sha1 = "90bc7a7c96410424509e4263e277e43250c05691"
 uuid = "05181044-ff0b-4ac5-8273-598c1e38db00"
 version = "1.0.0"
 
+[[deps.RepresentativePeriodsFinder]]
+deps = ["CSV", "DataFrames", "Dates", "FileIO", "GR", "Interpolations", "JuMP", "LinearAlgebra", "MathOptInterface", "NamedTupleTools", "Plots", "ProgressMeter", "StatsBase", "TimeSeries", "UnPack", "YAML"]
+git-tree-sha1 = "d45c70d8d705a5a830683cfe351edf631a716e5f"
+repo-rev = "master"
+repo-url = "https://gitlab.kuleuven.be/UCM/representativedaysfinder.jl"
+uuid = "d8a704e0-5cf8-11e9-3a92-a36052b0d072"
+version = "0.4.4"
+
 [[deps.Requires]]
 deps = ["UUIDs"]
 git-tree-sha1 = "838a3a4188e2ded87a4f9f184b4b0d78a1e91cb7"
@@ -1423,6 +1436,12 @@ deps = ["OffsetArrays"]
 git-tree-sha1 = "5683455224ba92ef59db72d10690690f4a8dc297"
 uuid = "06e1c1a7-607b-532d-9fad-de7d9aa2abac"
 version = "0.3.1"
+
+[[deps.TimeSeries]]
+deps = ["Dates", "DelimitedFiles", "DocStringExtensions", "RecipesBase", "Reexport", "Statistics", "Tables"]
+git-tree-sha1 = "3dd965ee9ce5e1857172cffa6d8985cd8b299585"
+uuid = "9e3dc215-6440-5c97-bce1-76c03772f85e"
+version = "0.23.1"
 
 [[deps.TranscodingStreams]]
 deps = ["Random", "Test"]

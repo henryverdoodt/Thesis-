@@ -113,6 +113,31 @@ for c in intersect(countries, countries_demand)
     end
 end
 
+############## RESHAPE FOR to 3H TIMESTEP ##############
+
+# Calculate the number of rows in the new dataframe
+nrows_new = Int(ceil(size(dem, 1)/3))
+
+# Initialize the new dataframe
+dem_3h = DataFrame()
+
+# Reshape the dataframe by taking the mean value of three consecutive rows
+for col in names(dem)
+    col_data = []
+    for i in 1:nrows_new
+        row_start = (i-1)*3 + 1
+        row_end = min(i*3, size(dem, 1))
+        push!(col_data, mean(dem[row_start:row_end, col]))
+    end
+    dem_3h[!, col] = col_data
+end
+
+# Display the new dataframe
+dem_3h
+
+########################################################
+
+
 sol = DataFrame(col1 = Float64[])
 for c in intersect(countries, countries_solar)
     solar1 = dropmissing(solar[solar.country .== c, [:year, :cf]], disallowmissing=true)
@@ -125,6 +150,31 @@ for c in intersect(countries, countries_solar)
     end
 end
 
+
+############## RESHAPE FOR to 3H TIMESTEP ##############
+
+# Calculate the number of rows in the new dataframe
+nrows_new = Int(ceil(size(sol, 1)/3))
+
+# Initialize the new dataframe
+sol_3h = DataFrame()
+
+# Reshape the dataframe by taking the mean value of three consecutive rows
+for col in names(sol)
+    col_data = []
+    for i in 1:nrows_new
+        row_start = (i-1)*3 + 1
+        row_end = min(i*3, size(sol, 1))
+        push!(col_data, mean(sol[row_start:row_end, col]))
+    end
+    sol_3h[!, col] = col_data
+end
+
+# Display the new dataframe
+sol_3h
+
+########################################################
+
 won = DataFrame(col1 = Float64[])
 for c in intersect(countries, countries_windon)
     windon1 = dropmissing(windon[windon.country .== c, [:year, :cf]], disallowmissing=true)
@@ -136,6 +186,30 @@ for c in intersect(countries, countries_windon)
         won = hcat(won, windon2)
     end
 end
+
+############## RESHAPE FOR to 3H TIMESTEP ##############
+
+# Calculate the number of rows in the new dataframe
+nrows_new = Int(ceil(size(won, 1)/3))
+
+# Initialize the new dataframe
+won_3h = DataFrame()
+
+# Reshape the dataframe by taking the mean value of three consecutive rows
+for col in names(won)
+    col_data = []
+    for i in 1:nrows_new
+        row_start = (i-1)*3 + 1
+        row_end = min(i*3, size(won, 1))
+        push!(col_data, mean(won[row_start:row_end, col]))
+    end
+    won_3h[!, col] = col_data
+end
+
+# Display the new dataframe
+won_3h
+
+########################################################
 
 
 woff = DataFrame(col1 = Float64[])
@@ -150,6 +224,30 @@ for c in intersect(countries, countries_windoff)
     end
 end
 
+############## RESHAPE FOR to 3H TIMESTEP ##############
+
+# Calculate the number of rows in the new dataframe
+nrows_new = Int(ceil(size(woff, 1)/3))
+
+# Initialize the new dataframe
+woff_3h = DataFrame()
+
+# Reshape the dataframe by taking the mean value of three consecutive rows
+for col in names(woff)
+    col_data = []
+    for i in 1:nrows_new
+        row_start = (i-1)*3 + 1
+        row_end = min(i*3, size(woff, 1))
+        push!(col_data, mean(woff[row_start:row_end, col]))
+    end
+    woff_3h[!, col] = col_data
+end
+
+# Display the new dataframe
+woff_3h
+
+########################################################
+
 
 ## Step 2: create model & pass data to model
 m = Model(optimizer_with_attributes(Gurobi.Optimizer))
@@ -157,7 +255,7 @@ m = Model(optimizer_with_attributes(Gurobi.Optimizer))
 # Step 2a: create sets
 function define_sets!(m::Model, data::Dict, network::Dict)
     m.ext[:sets] = Dict()
-    J = m.ext[:sets][:J] = 1:8760 # Timesteps
+    J = m.ext[:sets][:J] = 1:8760 # Timesteps  # 2920  # 8760
     I = m.ext[:sets][:I] = [id for id in keys(data["PowerSector"]) if id ∉ ["SPP_lignite", "SPP_coal", "CCGT_old"]] # Generators per type
     L_ac = m.ext[:sets][:AC_Lines] = [network["AC_Lines"]["AC_$(i)"]["Connection"] for i in 1:7] # AC Lines
     L_dc = m.ext[:sets][:DC_Lines] = [network["DC_Lines"]["DC_$(i)"]["Connection"] for i in 1:7] # DC Lines
@@ -217,7 +315,7 @@ function process_parameters!(m::Model, data::Dict, network::Dict)
   
     # parameters of generators per unit
     d = data["PowerSector"]
-    betaD = m.ext[:parameters][:betaD] = Dict(i => (d[SubString(i,1:length(i))]["fuelCosts"]/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # EUR/MWh, Cost of generation of unit i
+    betaD = m.ext[:parameters][:betaD] = Dict(i => (d[SubString(i,1:length(i))]["fuelCosts"]/d[SubString(i,1:length(i))]["efficiency"]) for i in I)  # EUR/MWh, Cost of generation of unit i
     deltaD = m.ext[:parameters][:deltaD] = Dict(i => (d[SubString(i,1:length(i))]["emissions"]/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # ton/MWh, Emissions of generation of unit i
     GMAX = m.ext[:parameters][:GMAX] = Dict(i => d[SubString(i,1:length(i))]["gMAX"] for i in I) # MW, Maximum Power Output of one generation unit
     VC = m.ext[:parameters][:VC] = Dict(i => ((d[SubString(i,1:length(i))]["fuelCosts"] + d[SubString(i,1:length(i))]["emissions"]*alphaCO2)/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # EUR/MWh, Variable Cost of unit i
@@ -245,10 +343,9 @@ function process_parameters!(m::Model, data::Dict, network::Dict)
     return m
 end
 
-
 # call functions
 define_sets!(m, data, network)  
-process_time_series_data!(m, dem, sol, won, woff)
+process_time_series_data!(m, dem, sol, won, woff)   # process_time_series_data!(m, dem_3h, sol_3h, won_3h, woff_3h)  # process_time_series_data!(m, dem, sol, won, woff) 
 process_parameters!(m, data, network)
 
 
@@ -263,7 +360,6 @@ function find_line_number(network::Dict, countries::Vector)
     return nothing
 end
 
-#test = find_line_number(network["DC_Lines"], ["UK", "FR"])
 
 ## Step 3: construct your model
 function build_model!(m::Model)
@@ -311,65 +407,33 @@ function build_model!(m::Model)
     ens = m.ext[:variables][:ens] = @variable(m, [j=J,n=N], lower_bound=0, base_name="energy not served") # Energy Not Served at time j in node n [MWh] (OR Should I use Load shed of demand instead in MW?)
     pl = m.ext[:variables][:pl] = @variable(m, [j=J,l=L], lower_bound=0, base_name="power flow in transmission") # Power flow through Transmission Line l at time j [MW]
     θ = m.ext[:variables][:θ] = @variable(m, [j=J,n=N], lower_bound=0, base_name="voltage angle") # Voltage angle at node n and time j [rad]
-    #xl = m.ext[:variables][:xl] = @variable(m, [l=L], Bin, lower_bound=0, base_name="decision built transmission") # Decision variable, built transmission line equal to 1 if not built equal to 0
     varlac = m.ext[:variables][:varlac] = @variable(m, [la=L_ac], lower_bound=0, base_name="capacity of ac line") # Capacity of AC line [MW]
     varldc = m.ext[:variables][:varldc] = @variable(m, [ld=L_dc], lower_bound=0, base_name="capacity of dc line") # Capacity of DC line [MW]
 
-
     # Objective
-    #obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] + (IC_l_AC[la]+IC_l_DC[ld])*xl[l] + VC[i]*g[i,j,n] + VOLL*ens[j,n] for i in I, j in J, n in N, la in 1:6, ld in 1:5, l in L))
     obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in I, n in N)  + sum(IC_var_AC[find_line_number(network["AC_Lines"], la)]*varlac[la] for la in L_ac) + sum(IC_var_DC[find_line_number(network["DC_Lines"], ld)]*varldc[ld] for ld in L_dc) + sum(VC[i]*g[i,j,n] for i in I, j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N))
-
-    # Matrice format to reduce calculation time
-    #=
-    # Define variables as matrices
-    cap_mat = value.(reshape([cap[i,n] for i in I for n in N], (length(I), length(N))))
-    g_mat = value.(reshape([g[i,j,n] for i in I for j in J for n in N], (length(I), length(J), length(N))))
-    ens_mat = value.(reshape([ens[j,n] for j in J for n in N], (length(J), length(N))))
-    varlac_vec = value.(varlac)
-    varldc_vec = value.(varldc)
-
-    # Calculate the objective using matrix operations
-    obj = m.ext[:objective] = @objective(m, Min, dot(IC, cap_mat) + dot(IC_var_AC, varlac_vec) + dot(IC_var_DC, varldc_vec) + dot(VC, g_mat) + VOLL * sum(ens_mat))
-     =#
-    #=
-    println(sum(IC[i] for i in I))
-    println(sum(IC[i]*cap[i,n] for i in I, n in N))
-    println(sum(IC_var_AC[find_line_number(network["AC_Lines"], la)]*varlac[la] for la in L_ac))
-    find_line_number(network["AC_Lines"], ["Milaan", "Florence"])
-    println(sum(IC_var_DC[ld] for ld in 1:length(L_dc)))
-    println(la for la in L_ac)
-    println(n for n in N)
-    println(la for la in L_ac) #sum(IC_l_AC[la] for 
-    println(IC_l_AC[2])
-    println([network["AC_Lines"]["AC_$(la)"]["Connection"] for la in 1:6])
-    =#
-                                                                                            # sum(Pl[l] for l in L if l[1] == n; init=0)
+                                                                                           
     # Constraints
+    con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in I) + sum(pl[j,l] for l in L if l[1] == n; init=0) >= D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0)) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
+    con_LoL = m.ext[:constraints][:con_LoL] = @constraint(m, [j=J,n=N], 0 <= ens[j,n] <= D[Symbol(n)][j]) # Loss of Load constraint
+    con_PFap_ac = m.ext[:constraints][:con_PFap_ac] = @constraint(m, [j=J,la=L_ac], pl[j,la] == Bl_ac * network["AC_Lines"]["AC_$(find_line_number(network["AC_Lines"], la))"]["Length"] * (θ[j,la[1]] - θ[j,la[2]]) * 400 * 400) # 'DC' Power Flow Approximation [MW] # θ should have a node as argument but l[x] is a node # TAKE LINE VOLTAGE VALUE AS 400kV
+    con_PFap_dc = m.ext[:constraints][:con_PFap_dc] = @constraint(m, [j=J,ld=L_dc], pl[j,ld] == Bl_dc * network["DC_Lines"]["DC_$(find_line_number(network["DC_Lines"], ld))"]["Length"] * (θ[j,ld[1]] - θ[j,ld[2]]) * 400 * 400) # 'DC' Power Flow Approximation [MW] # θ should have a node as argument but l[x] is a node 
+    con_varlac1 = m.ext[:constraints][:con_varlac1] = @constraint(m, [j=J,la=L_ac], pl[j,la] <= varlac[la]) # Upper Limit Power Flow AC
+    con_varlac2 = m.ext[:constraints][:con_varlac2] = @constraint(m, [j=J,la=L_ac], -varlac[la] <= pl[j,la]) # Lower Limit Power Flow AC
+    con_varldc1 = m.ext[:constraints][:con_varldc1] = @constraint(m, [j=J,ld=L_dc], pl[j,ld] <= varldc[ld]) # Upper Limit Power Flow DC
+    con_varldc2 = m.ext[:constraints][:con_varldc2] = @constraint(m, [j=J,ld=L_dc], -varldc[ld] <= pl[j,ld]) # Lower Limit Power Flow DC
+    con_θb = m.ext[:constraints][:con_θb] = @constraint(m, [j=J,n=N], -pi <= θ[j,n] <= pi) # Bound Voltage angles
+    con_θref = m.ext[:constraints][:con_θref] = @constraint(m, [j=J], θ[j,"BE"] == 0.0) # Voltage angle at ref node
     con_DGl = m.ext[:constraints][:con_DGl] = @constraint(m, [i=ID, j=J, n=N], g[i,j,n] <= AF[i]*cap[i,n]) # Dispatchable generation limit
     con_SGl = m.ext[:constraints][:con_SGl] = @constraint(m, [i=["Solar"], j=J, n=N], g[i,j,n] <= AFS[Symbol(n)][j]*AF[i]*cap[i,n]) # Solar generation limit
     con_WONGl = m.ext[:constraints][:con_WONGl] = @constraint(m, [i=["WindOnshore"], j=J, n=N], g[i,j,n] <= AFWON[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
     con_WOFFGl = m.ext[:constraints][:con_WOFFGl] = @constraint(m, [i=["WindOffshore"], j=J, n=intersect(countries, countries_windoff)], g[i,j,n] <= AFWOFF[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
     con_CWO_WOFF = m.ext[:constraints][:con_CWO_WOFF] = @constraint(m, [i=["WindOffshore"], j=J, n=setdiff(countries, countries_windoff)], g[i,j,n] == 0.0) # No wind offshore in these countries
-    #con_SOL_ES = m.ext[:constraints][:con_SOL_ES] = @constraint(m, [i=["Nuclear", "CCGT_new", "OCGT", "ICE", "Biomass", "WindOnshore"], j=J, n=["ES"]], g[i,j,n] == 0.0)
-
-    con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in I) + sum(pl[j,l] for l in L if l[1] == n; init=0) >= D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0)) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
-    con_LoL = m.ext[:constraints][:con_LoL] = @constraint(m, [j=J,n=N], 0 <= ens[j,n] <= D[Symbol(n)][j]) # Loss of Load constraint
-    #con_PFap_ac = m.ext[:constraints][:con_PFap_ac] = @constraint(m, [j=J,la=L_ac], pl[j,la] == Bl_ac*(θ[j,la[1]] - θ[j,la[2]])) # 'DC' Power Flow Approximation # θ should have a node as argument but l[x] is a node 
-    #con_PFap_dc = m.ext[:constraints][:con_PFap_dc] = @constraint(m, [j=J,ld=L_dc], pl[j,ld] == Bl_dc*(θ[j,ld[1]] - θ[j,ld[2]])) # 'DC' Power Flow Approximation # θ should have a node as argument but l[x] is a node 
-    con_varlac1 = m.ext[:constraints][:con_varlac1] = @constraint(m, [j=J,la=L_ac], pl[j,la] <= varlac[la]) # Upper Limit Power Flow AC
-    con_varlac2 = m.ext[:constraints][:con_varlac2] = @constraint(m, [j=J,la=L_ac], -varlac[la] <= pl[j,la]) # Lower Limit Power Flow AC
-    con_varldc1 = m.ext[:constraints][:con_varldc1] = @constraint(m, [j=J,ld=L_dc], pl[j,ld] <= varldc[ld]) # Upper Limit Power Flow DC
-    con_varldc2 = m.ext[:constraints][:con_varldc2] = @constraint(m, [j=J,ld=L_dc], -varldc[ld] <= pl[j,ld]) # Lower Limit Power Flow DC
-    #con_θb = m.ext[:constraints][:con_θb] = @constraint(m, [j=J,n=N], -pi <= θ[j,n] <= pi) # Bound Voltage angles
-    #con_θref = m.ext[:constraints][:con_θref] = @constraint(m, [j=J], θ[j,"BE"] == 0.0) # Voltage angle at ref node
-    #con_DGl = m.ext[:constraints][:con_DGl] = @constraint(m, [i=ID, j=J, n=N], g[i,j,n] <= AF[i]*cap[i,n]) # Dispatchable generation limit
-    #con_SGl = m.ext[:constraints][:con_SGl] = @constraint(m, [i=["Solar"], j=J, n=N], g[i,j,n] <= AFS[Symbol(n)][j]*AF[i]*cap[i,n]) # Solar generation limit
-    #con_WONGl = m.ext[:constraints][:con_WONGl] = @constraint(m, [i=["WindOnshore"], j=J, n=N], g[i,j,n] <= AFWON[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
-    #con_WOFFGl = m.ext[:constraints][:con_WOFFGl] = @constraint(m, [i=["WindOffshore"], j=J, n=intersect(countries, countries_windoff)], g[i,j,n] <= AFWOFF[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
-    #con_CWO_WOFF = m.ext[:constraints][:con_CWO_WOFF] = @constraint(m, [i=["WindOffshore"], j=J, n=setdiff(countries, countries_windoff)], g[i,j,n] == 0.0) # No wind offshore in these countries
-    #con_SOL_ES = m.ext[:constraints][:con_SOL_ES] = @constraint(m, [i=["Nuclear", "CCGT_new", "OCGT", "ICE", "Biomass", "WindOnshore"], j=J, n=["ES"]], g[i,j,n] == 0.0)
 end
+
+#network["DC_Lines"]["DC_$(find_line_number(network["DC_Lines"],  ["UK", "BE"]))"]["Length"]
+Bl_ac * network["AC_Lines"]["AC_$(find_line_number(network["AC_Lines"], ["ES", "FR"]))"]["Length"]*400*400
+
 
 # Build model
 build_model!(m)
@@ -431,15 +495,15 @@ bar_edges=true,
 ylabel="Capacity (MW)",
 xticks=(1:length(nodes), nodes),
 label= ["Biomass" "WindOffshore" "CCGT_new" "WindOnshore" "Nuclear" "Solar" "OCGT" "ICE"],
-color_palette= Generator_colors)
+color_palette= Generator_colors, title="Installed Generation Capacity (MW)")
 
-# Transmission Network Italy
+# Transmission Network Italy with constructed lines
 function plot_transmission_needed(dict1::Dict, dict2::Dict)
 	img 	= load("/Users/henryverdoodt/Documents/CODE/IMAGES/europe_map.jpeg");
     countries = Dict("Spain" => (380, 1400), "France" => (640, 1140), "Belgium" => (722, 960), "Germany" => (880, 960), 
                  "Netherlands" => (745, 885), "Denmark" => (866, 720), "Norway" => (890, 482), "United Kingdom" => (553, 835))
 
-	plot(img, axis=([], false))
+	plot(img, axis=([], false), title="Needed Transmission Lines")
     if dict1[["ES", "FR"]] != 0.0
         plot!([countries["Spain"][1],countries["France"][1]],
 		    [countries["Spain"][2],countries["France"][2]],
@@ -519,6 +583,7 @@ function plot_transmission_needed(dict1::Dict, dict2::Dict)
 			 color="black", label=:none)
 end
 
+# Heatmap with transmission capacities
 function plot_transmission_capacities(dict1::Dict, dict2::Dict)
     countries = unique([k[1] for k in keys(dict1)] ∪ [k[2] for k in keys(dict1)] ∪ [k[1] for k in keys(dict2)] ∪ [k[2] for k in keys(dict2)])
 
