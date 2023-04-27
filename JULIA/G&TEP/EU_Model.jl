@@ -2,8 +2,9 @@
 # Author: Henry Verdoodt
 # Last update: April 20, 2023
 
+#= 
 ## Step 0: Activate environment - ensure consistency accross computers
-#= using Pkg
+using Pkg
 Pkg.activate(@__DIR__) # @__DIR__ = directory this script is in
 Pkg.instantiate() # If a Manifest.toml file exist in the current project, download all the packages declared in that manifest. Else, resolve a set of feasible packages from the Project.toml files and install them.
 Pkg.add("InteractiveUtils")
@@ -17,10 +18,12 @@ Pkg.add("Plots")
 Pkg.add("PolyChaos")
 Pkg.add("YAML")
 Pkg.add("StatsPlots")
-Pkg.add("Images")  =#
+Pkg.add("Images") 
+ =#
 
 using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyChaos, InteractiveUtils
 using StatsPlots, Images
+
 
 # Transmission Network West Europe
 function plot_transmission_network()
@@ -81,181 +84,43 @@ end
 
 plot_transmission_network()
 
-# Read the CSV file into a DataFrame
-demand = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/DEMAND/PECD-country-demand_national_estimates-2025.csv", DataFrame)
-solar = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/SOLAR/PECD-2021.3-country-LFSolarPV-2025.csv", DataFrame)
-windon = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDON/PECD-2021.3-country-Onshore-2025.csv", DataFrame)
-windoff = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDOFF/PECD-2021.3-country-Offshore-2025.csv", DataFrame)
-data = YAML.load_file(joinpath(@__DIR__, "overview_data.yaml"))
-network = YAML.load_file(joinpath(@__DIR__, "network_west_europe.yaml"))
-println("Done")
+include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/REFORMAT_DATA.jl")
 
-# Get the unique countries in the 'country' column
-countries_demand = unique(demand.country) # ["AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK", "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "TR", "UA", "UK"]
-countries_solar= unique(solar.country)    # ["AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK", "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "TR", "UA", "UK"]
-countries_windon = unique(windon.country) # MT is in solar & demand but not in windon => # ["AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "TR", "UA", "UK"]
-countries_windoff= unique(windoff.country) # ["BE", "DE", "DK", "FI", "FR", "IE", "IT", "NL", "PT", "SE", "UK"]
-
-############################# REFORMATING DATASETS (one column per node where each row is the hourly value (demand or cf)) #############################
 # PARAMETERS
 y = 2016.0
 countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
+aggregate_3h = false
 
-dem = DataFrame(col1 = Float64[])
-for c in intersect(countries, countries_demand)
-    demand1 = dropmissing(demand[demand.country .== c, [:year, :dem_MW]], disallowmissing=true)
-    demand2 = dropmissing(demand1[demand1.year .== y, [:dem_MW]], disallowmissing=true)
-    rename!(demand2, :dem_MW => c)
-    if isempty(dem)
-        dem = hcat(demand2)
-    else
-        dem = hcat(dem, demand2)
-    end
-end
+countries_demand = countries_demand_entso
+countries_solar = countries_solar_entso
+countries_windon = countries_windon_entso
+countries_windoff = countries_windoff_entso
 
-############## RESHAPE FOR to 3H TIMESTEP ##############
-
-# Calculate the number of rows in the new dataframe
-nrows_new = Int(ceil(size(dem, 1)/3))
-
-# Initialize the new dataframe
-dem_3h = DataFrame()
-
-# Reshape the dataframe by taking the mean value of three consecutive rows
-for col in names(dem)
-    col_data = []
-    for i in 1:nrows_new
-        row_start = (i-1)*3 + 1
-        row_end = min(i*3, size(dem, 1))
-        push!(col_data, mean(dem[row_start:row_end, col]))
-    end
-    dem_3h[!, col] = col_data
-end
-
-# Display the new dataframe
-dem_3h
-
-########################################################
-
-
-sol = DataFrame(col1 = Float64[])
-for c in intersect(countries, countries_solar)
-    solar1 = dropmissing(solar[solar.country .== c, [:year, :cf]], disallowmissing=true)
-    solar2 = dropmissing(solar1[solar1.year .== y, [:cf]], disallowmissing=true)
-    rename!(solar2, :cf => c)
-    if isempty(sol)
-        sol = hcat(solar2)
-    else
-        sol = hcat(sol, solar2)
-    end
-end
-
-
-############## RESHAPE FOR to 3H TIMESTEP ##############
-
-# Calculate the number of rows in the new dataframe
-nrows_new = Int(ceil(size(sol, 1)/3))
-
-# Initialize the new dataframe
-sol_3h = DataFrame()
-
-# Reshape the dataframe by taking the mean value of three consecutive rows
-for col in names(sol)
-    col_data = []
-    for i in 1:nrows_new
-        row_start = (i-1)*3 + 1
-        row_end = min(i*3, size(sol, 1))
-        push!(col_data, mean(sol[row_start:row_end, col]))
-    end
-    sol_3h[!, col] = col_data
-end
-
-# Display the new dataframe
-sol_3h
-
-########################################################
-
-won = DataFrame(col1 = Float64[])
-for c in intersect(countries, countries_windon)
-    windon1 = dropmissing(windon[windon.country .== c, [:year, :cf]], disallowmissing=true)
-    windon2 = dropmissing(windon1[windon1.year .== y, [:cf]], disallowmissing=true)
-    rename!(windon2, :cf => c)
-    if isempty(won)
-        won = hcat(windon2)
-    else
-        won = hcat(won, windon2)
-    end
-end
-
-############## RESHAPE FOR to 3H TIMESTEP ##############
-
-# Calculate the number of rows in the new dataframe
-nrows_new = Int(ceil(size(won, 1)/3))
-
-# Initialize the new dataframe
-won_3h = DataFrame()
-
-# Reshape the dataframe by taking the mean value of three consecutive rows
-for col in names(won)
-    col_data = []
-    for i in 1:nrows_new
-        row_start = (i-1)*3 + 1
-        row_end = min(i*3, size(won, 1))
-        push!(col_data, mean(won[row_start:row_end, col]))
-    end
-    won_3h[!, col] = col_data
-end
-
-# Display the new dataframe
-won_3h
-
-########################################################
-
-
-woff = DataFrame(col1 = Float64[])
-for c in intersect(countries, countries_windoff)
-    windoff1 = dropmissing(windoff[windoff.country .== c, [:year, :cf]], disallowmissing=true)
-    windoff2 = dropmissing(windoff1[windoff1.year .== y, [:cf]], disallowmissing=true)
-    rename!(windoff2, :cf => c)
-    if isempty(woff)
-        woff = hcat(windoff2)
-    else
-        woff = hcat(woff, windoff2)
-    end
-end
-
-############## RESHAPE FOR to 3H TIMESTEP ##############
-
-# Calculate the number of rows in the new dataframe
-nrows_new = Int(ceil(size(woff, 1)/3))
-
-# Initialize the new dataframe
-woff_3h = DataFrame()
-
-# Reshape the dataframe by taking the mean value of three consecutive rows
-for col in names(woff)
-    col_data = []
-    for i in 1:nrows_new
-        row_start = (i-1)*3 + 1
-        row_end = min(i*3, size(woff, 1))
-        push!(col_data, mean(woff[row_start:row_end, col]))
-    end
-    woff_3h[!, col] = col_data
-end
-
-# Display the new dataframe
-woff_3h
-
-########################################################
+# Read the CSV file into a DataFrame
+dem = reformat_entso_demand(demand_entso, countries, countries_demand_entso, y, aggregate_3h)
+sol = reformat_entso_solar(solar_entso, countries, countries_solar_entso, y, aggregate_3h)
+won = reformat_entso_windon(windon_entso, countries, countries_windon_entso, y, aggregate_3h)
+woff = reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, y, aggregate_3h)
+data = YAML.load_file(joinpath(@__DIR__, "overview_data.yaml"))
+network = YAML.load_file(joinpath(@__DIR__, "network_west_europe.yaml"))
+println("Done")
 
 
 ## Step 2: create model & pass data to model
 m = Model(optimizer_with_attributes(Gurobi.Optimizer))
 
+function timestep(aggregate::Bool)
+    if aggregate
+        return 2920
+    else
+        return 8760
+    end
+end
+
 # Step 2a: create sets
 function define_sets!(m::Model, data::Dict, network::Dict)
     m.ext[:sets] = Dict()
-    J = m.ext[:sets][:J] = 1:8760 # Timesteps  # 2920  # 8760
+    J = m.ext[:sets][:J] = 1:timestep(aggregate_3h) # Timesteps  # 2920  # 8760
     I = m.ext[:sets][:I] = [id for id in keys(data["PowerSector"]) if id ∉ ["SPP_lignite", "SPP_coal", "CCGT_old"]] # Generators per type
     L_ac = m.ext[:sets][:AC_Lines] = [network["AC_Lines"]["AC_$(i)"]["Connection"] for i in 1:7] # AC Lines
     L_dc = m.ext[:sets][:DC_Lines] = [network["DC_Lines"]["DC_$(i)"]["Connection"] for i in 1:7] # DC Lines
@@ -416,14 +281,14 @@ function build_model!(m::Model)
     # Constraints
     con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in I) + sum(pl[j,l] for l in L if l[1] == n; init=0) >= D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0)) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
     con_LoL = m.ext[:constraints][:con_LoL] = @constraint(m, [j=J,n=N], 0 <= ens[j,n] <= D[Symbol(n)][j]) # Loss of Load constraint
-    con_PFap_ac = m.ext[:constraints][:con_PFap_ac] = @constraint(m, [j=J,la=L_ac], pl[j,la] == Bl_ac * network["AC_Lines"]["AC_$(find_line_number(network["AC_Lines"], la))"]["Length"] * (θ[j,la[1]] - θ[j,la[2]]) * 400 * 400) # 'DC' Power Flow Approximation [MW] # θ should have a node as argument but l[x] is a node # TAKE LINE VOLTAGE VALUE AS 400kV
-    con_PFap_dc = m.ext[:constraints][:con_PFap_dc] = @constraint(m, [j=J,ld=L_dc], pl[j,ld] == Bl_dc * network["DC_Lines"]["DC_$(find_line_number(network["DC_Lines"], ld))"]["Length"] * (θ[j,ld[1]] - θ[j,ld[2]]) * 400 * 400) # 'DC' Power Flow Approximation [MW] # θ should have a node as argument but l[x] is a node 
+    #con_PFap_ac = m.ext[:constraints][:con_PFap_ac] = @constraint(m, [j=J,la=L_ac], pl[j,la] == Bl_ac * network["AC_Lines"]["AC_$(find_line_number(network["AC_Lines"], la))"]["Length"] * (θ[j,la[1]] - θ[j,la[2]]) * 400 * 400) # 'DC' Power Flow Approximation [MW] # θ should have a node as argument but l[x] is a node # TAKE LINE VOLTAGE VALUE AS 400kV
+    #con_PFap_dc = m.ext[:constraints][:con_PFap_dc] = @constraint(m, [j=J,ld=L_dc], pl[j,ld] == Bl_dc * network["DC_Lines"]["DC_$(find_line_number(network["DC_Lines"], ld))"]["Length"] * (θ[j,ld[1]] - θ[j,ld[2]]) * 400 * 400) # 'DC' Power Flow Approximation [MW] # θ should have a node as argument but l[x] is a node 
     con_varlac1 = m.ext[:constraints][:con_varlac1] = @constraint(m, [j=J,la=L_ac], pl[j,la] <= varlac[la]) # Upper Limit Power Flow AC
     con_varlac2 = m.ext[:constraints][:con_varlac2] = @constraint(m, [j=J,la=L_ac], -varlac[la] <= pl[j,la]) # Lower Limit Power Flow AC
     con_varldc1 = m.ext[:constraints][:con_varldc1] = @constraint(m, [j=J,ld=L_dc], pl[j,ld] <= varldc[ld]) # Upper Limit Power Flow DC
     con_varldc2 = m.ext[:constraints][:con_varldc2] = @constraint(m, [j=J,ld=L_dc], -varldc[ld] <= pl[j,ld]) # Lower Limit Power Flow DC
-    con_θb = m.ext[:constraints][:con_θb] = @constraint(m, [j=J,n=N], -pi <= θ[j,n] <= pi) # Bound Voltage angles
-    con_θref = m.ext[:constraints][:con_θref] = @constraint(m, [j=J], θ[j,"BE"] == 0.0) # Voltage angle at ref node
+    #con_θb = m.ext[:constraints][:con_θb] = @constraint(m, [j=J,n=N], -pi <= θ[j,n] <= pi) # Bound Voltage angles
+    #con_θref = m.ext[:constraints][:con_θref] = @constraint(m, [j=J], θ[j,"BE"] == 0.0) # Voltage angle at ref node
     con_DGl = m.ext[:constraints][:con_DGl] = @constraint(m, [i=ID, j=J, n=N], g[i,j,n] <= AF[i]*cap[i,n]) # Dispatchable generation limit
     con_SGl = m.ext[:constraints][:con_SGl] = @constraint(m, [i=["Solar"], j=J, n=N], g[i,j,n] <= AFS[Symbol(n)][j]*AF[i]*cap[i,n]) # Solar generation limit
     con_WONGl = m.ext[:constraints][:con_WONGl] = @constraint(m, [i=["WindOnshore"], j=J, n=N], g[i,j,n] <= AFWON[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
@@ -432,8 +297,7 @@ function build_model!(m::Model)
 end
 
 #network["DC_Lines"]["DC_$(find_line_number(network["DC_Lines"],  ["UK", "BE"]))"]["Length"]
-Bl_ac * network["AC_Lines"]["AC_$(find_line_number(network["AC_Lines"], ["ES", "FR"]))"]["Length"]*400*400
-
+#Bl_ac * network["AC_Lines"]["AC_$(find_line_number(network["AC_Lines"], ["ES", "FR"]))"]["Length"]*400*400
 
 # Build model
 build_model!(m)
