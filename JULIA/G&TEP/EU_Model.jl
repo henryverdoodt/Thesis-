@@ -24,6 +24,9 @@ Pkg.add("Images")
 using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyChaos, InteractiveUtils
 using StatsPlots, Images
 
+# Include Files
+include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/REFORMAT_DATA.jl")
+include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/PLOT_MODEL.jl")
 
 # Transmission Network West Europe
 function plot_transmission_network()
@@ -83,8 +86,6 @@ function plot_transmission_network()
 end
 
 plot_transmission_network()
-
-include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/REFORMAT_DATA.jl")
 
 # PARAMETERS
 y = 2016.0
@@ -316,9 +317,6 @@ function build_model!(m::Model)
 
 end
 
-#network["DC_Lines"]["DC_$(find_line_number(network["DC_Lines"],  ["UK", "BE"]))"]["Length"]
-#Bl_ac * network["AC_Lines"]["AC_$(find_line_number(network["AC_Lines"], ["ES", "FR"]))"]["Length"]*400*400
-
 # Build model
 build_model!(m)
 
@@ -342,158 +340,13 @@ I = m.ext[:sets][:I]
 L_ac = m.ext[:sets][:AC_Lines] 
 L_dc = m.ext[:sets][:DC_Lines]
 
-# Dictionary to store the generators capacity for each node 
-gen_dict = Dict{String, Dict{String, Float64}}()  
-for node in N
-    gen_dict[node] = Dict((gen => 0.0 for gen in I)...)
-    for unit in I
-        gen_dict[node][unit] = value.(m.ext[:variables][:cap][unit,node])
-    end
-end
-
-# Create a dictionaris to store the AC and DC transmission capacity
-trans_ac_dict = Dict(la => value.(m.ext[:variables][:varlac][la]) for la in L_ac)
-trans_dc_dict = Dict(ld => value.(m.ext[:variables][:varldc][ld]) for ld in L_dc)
-
-# Extract the node names and the generating unit types
+gen_dict = get_generators_capacity(m, I, N)
+data_matrix = matrix_generators_data(gen_dict)
 nodes = collect(keys(gen_dict))
-unit_types = collect(keys(gen_dict[nodes[1]]))
+generation = plot_generator_capacities(data_matrix , nodes , Generator_colors, Generator_labels)
 
-# Create the data matrix
-data = zeros(length(nodes), length(unit_types))
-for (i, node) in enumerate(nodes)
-    for (j, unit_type) in enumerate(unit_types)
-        data[i, j] = gen_dict[node][unit_type]
-    end
-end
+trans_ac_dict = get_ac_transmission_capacity(m, L_ac)
+trans_dc_dict = get_dc_transmission_capacity(m, L_dc)
+transmission_map = plot_transmission_needed(trans_ac_dict, trans_dc_dict, countries_coord)
 
-# Color Palette
-Generator_colors = [:green, :lightblue, :orange, :blue, :purple, :gold, :red, :gray]
-
-# Plot generation stacked bar chart
-generation = groupedbar(data,
-bar_position = :stack,
-bar_width=0.5,
-bar_edges=true,
-#xlabel="Node", 
-ylabel="Capacity (MW)",
-xticks=(1:length(nodes), nodes),
-label= ["Biomass" "WindOffshore" "CCGT_new" "WindOnshore" "Nuclear" "Solar" "OCGT" "ICE"],
-color_palette= Generator_colors, title="Installed Generation Capacity (MW)")
-
-# Transmission Network Italy with constructed lines
-function plot_transmission_needed(dict1::Dict, dict2::Dict)
-	img 	= load("/Users/henryverdoodt/Documents/CODE/IMAGES/Other/europe_map.jpeg");
-    countries = Dict("Spain" => (380, 1400), "France" => (640, 1140), "Belgium" => (722, 960), "Germany" => (880, 960), 
-                 "Netherlands" => (745, 885), "Denmark" => (866, 720), "Norway" => (890, 482), "United Kingdom" => (553, 835))
-
-	plot(img, axis=([], false), title="Needed Transmission Lines")
-    if dict1[["ES", "FR"]] != 0.0
-        plot!([countries["Spain"][1],countries["France"][1]],
-		    [countries["Spain"][2],countries["France"][2]],
-		    color="blue", linewidth=2, label="HVAC")
-    end
-	if dict1[["FR", "BE"]] != 0.0
-	    plot!([countries["France"][1],countries["Belgium"][1]],
-		    [countries["France"][2],countries["Belgium"][2]],
-		    color="blue", linewidth=2, label=:none)
-    end
-    if dict1[["FR", "DE"]] != 0.0
-	    plot!([countries["France"][1],countries["Germany"][1]],
-		    [countries["France"][2],countries["Germany"][2]],
-		    color="blue", linewidth=2, label=:none)
-    end
-    if dict1[["BE", "DE"]] != 0.0
-	    plot!([countries["Germany"][1],countries["Belgium"][1]],
-		     [countries["Germany"][2],countries["Belgium"][2]],
-		     color="blue", linewidth=2, label=:none)
-    end
-    if dict1[["BE", "NL"]] != 0.0
-        plot!([countries["Belgium"][1],countries["Netherlands"][1]],
-		    [countries["Belgium"][2],countries["Netherlands"][2]],
-		    color="blue", linewidth=2, label=:none)
-    end
-    if dict1[["NL", "DE"]] != 0.0
-	    plot!([countries["Netherlands"][1],countries["Germany"][1]],
-		    [countries["Netherlands"][2],countries["Germany"][2]],
-		    color="blue", linewidth=2, label=:none)
-    end
-    if dict1[["DK", "DE"]] != 0.0
-	    plot!([countries["Germany"][1],countries["Denmark"][1]],
-		    [countries["Germany"][2],countries["Denmark"][2]],
-		    color="blue", linewidth=2, label=:none)
-    end
-
-
-    if dict2[["UK", "FR"]] != 0.0
-	    plot!([countries["France"][1],countries["United Kingdom"][1]],
-		    [countries["France"][2],countries["United Kingdom"][2]],
-		    color="red", linewidth=2, label="HVDC")
-    end
-    if dict2[["UK", "BE"]] != 0.0
-	    plot!([countries["United Kingdom"][1],countries["Belgium"][1]],
-		    [countries["United Kingdom"][2],countries["Belgium"][2]],
-		    color="red", linewidth=2, label=:none)
-    end
-    if dict2[["UK", "NO"]] != 0.0
-        plot!([countries["United Kingdom"][1],countries["Norway"][1]],
-		    [countries["United Kingdom"][2],countries["Norway"][2]],
-		    color="red", linewidth=2, label=:none)
-    end
-    if dict2[["NO", "BE"]] != 0.0
-	    plot!([countries["Norway"][1],countries["Belgium"][1]],
-		    [countries["Norway"][2],countries["Belgium"][2]],
-		    color="red", linewidth=2, label=:none)
-    end
-    if dict2[["NO", "NL"]] != 0.0
-        plot!([countries["Norway"][1],countries["Netherlands"][1]],
-		    [countries["Norway"][2],countries["Netherlands"][2]],
-		    color="red", linewidth=2, label=:none)
-    end
-    if dict2[["NO", "DK"]] != 0.0
-	    plot!([countries["Norway"][1],countries["Denmark"][1]],
-		    [countries["Norway"][2],countries["Denmark"][2]],
-		    color="red", linewidth=2, label=:none)
-    end
-    if dict2[["DK", "NL"]] != 0.0
-        plot!([countries["Netherlands"][1],countries["Denmark"][1]],
-		    [countries["Netherlands"][2],countries["Denmark"][2]],
-		    color="red", linewidth=2, label=:none)
-    end
-
-	# Dots for Nodes
-	scatter!([nc[1] for nc in values(countries)],
-			 [nc[2] for nc in values(countries)], markersize=3,
-			 color="black", label=:none)
-end
-
-# Heatmap with transmission capacities
-function plot_transmission_capacities(dict1::Dict, dict2::Dict)
-    countries = unique([k[1] for k in keys(dict1)] ∪ [k[2] for k in keys(dict1)] ∪ [k[1] for k in keys(dict2)] ∪ [k[2] for k in keys(dict2)])
-
-    # Create a matrix of capacity values
-    capacity_matrix = zeros(length(countries), length(countries))
-    for (k, v) in dict1
-        i = findfirst(countries .== k[1])
-        j = findfirst(countries .== k[2])
-        capacity_matrix[i, j] = v
-    end
-    for (k, v) in dict2
-        i = findfirst(countries .== k[1])
-        j = findfirst(countries .== k[2])
-        capacity_matrix[i, j] += v
-    end
-    
-    # Plot the heatmap
-    heatmap(countries, countries, capacity_matrix, c=:blues, aspect_ratio=:equal, xlabel="To country", ylabel="From country", title="Capacity needed for different links (MW)")
-end
-
-# Plot transmission map and capacities
-transmission = plot_transmission_network()
-transmission_map = plot_transmission_needed(trans_ac_dict, trans_dc_dict)
-transmission_cap = plot_transmission_capacities(trans_ac_dict, trans_dc_dict)
-
-# Plot side by side
-plot(generation, transmission_map, transmission_cap, layout=(1,3), size=(1800,600))
-
-
+plot(generation, transmission_map, layout=(1,2), size=(1200,500))
