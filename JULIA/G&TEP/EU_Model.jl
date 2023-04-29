@@ -27,7 +27,7 @@ using StatsPlots, Images
 
 # Transmission Network West Europe
 function plot_transmission_network()
-	img 	= load("/Users/henryverdoodt/Documents/CODE/IMAGES/europe_map.jpeg");
+	img 	= load("/Users/henryverdoodt/Documents/CODE/IMAGES/Other/europe_map.jpeg");
     countries = Dict("Spain" => (380, 1400), "France" => (640, 1140), "Belgium" => (722, 960), "Germany" => (880, 960), 
                  "Netherlands" => (745, 885), "Denmark" => (866, 720), "Norway" => (890, 482), "United Kingdom" => (553, 835))
 
@@ -109,6 +109,7 @@ println("Done")
 ## Step 2: create model & pass data to model
 m = Model(optimizer_with_attributes(Gurobi.Optimizer))
 
+
 function timestep(aggregate::Bool)
     if aggregate
         return 2920
@@ -189,6 +190,10 @@ function process_parameters!(m::Model, data::Dict, network::Dict)
     IC = m.ext[:parameters][:IC] = Dict(i => 10^3*(d[SubString(i,1:length(i))]["OC"]*disc_r)/(1-(1/(1+disc_r)^(d[SubString(i,1:length(i))]["Lifetime"]))) for i in I) # EUR/MWy, Investment Cost in generation unit i
     AF = m.ext[:parameters][:AF] = Dict(i => d[SubString(i,1:length(i))]["AF"] for i in I) # Availability facor of a generator
 
+    #FC = m.ext[:parameters][:FC] = Dict(i => ((d[SubString(i,1:length(i))]["fuelCosts"])/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # EUR/MWh, Fuelcost Cost of unit i
+    #CO2 = m.ext[:parameters][:CO2] = Dict(i => ((d[SubString(i,1:length(i))]["emissions"])/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # ton/MWh, Variable Cost of unit i
+
+
     
     # parameters of transmission lines AC
     Fl_MAX_AC = m.ext[:parameters][:Fl_MAX_AC] = [network["AC_Lines"]["AC_$(i)"]["Capacity"] for i in 1:7] # MW, AC Lines
@@ -236,6 +241,7 @@ function build_model!(m::Model)
     # Extract sets
     J = m.ext[:sets][:J] # Timesteps
     I = m.ext[:sets][:I] # Generators per type
+    I_CO2 = ["CCGT_new", "OCGT", "ICE"] # Generators units emitting CO2
     ID = ["Nuclear", "CCGT_new", "OCGT", "ICE", "Biomass"]  # ID = ["Nuclear", "SPP_lignite", "SPP_coal", "CCGT_old", "CCGT_new", "OCGT", "ICE", "Biomass"]; As we assume Greenfield method we only take the new tech. and dont take coal into account
     IV = ["Solar", "WindOnshore", "WindOffshore"]
     L_ac = m.ext[:sets][:AC_Lines] # AC Lines
@@ -257,9 +263,12 @@ function build_model!(m::Model)
     Bl = m.ext[:parameters][:Bl]
     
         ### parameters of generators per unit
-    VC = m.ext[:parameters][:VC]
+    #VC = m.ext[:parameters][:VC]
     IC = m.ext[:parameters][:IC]
     AF = m.ext[:parameters][:AF]
+
+    #FC = m.ext[:parameters][:FC]
+    #CO2 = m.ext[:parameters][:CO2]
 
         ### parameters of transmission lines
     IC_var_AC = m.ext[:parameters][:IC_var_AC]
@@ -275,9 +284,15 @@ function build_model!(m::Model)
     varlac = m.ext[:variables][:varlac] = @variable(m, [la=L_ac], lower_bound=0, base_name="capacity of ac line") # Capacity of AC line [MW]
     varldc = m.ext[:variables][:varldc] = @variable(m, [ld=L_dc], lower_bound=0, base_name="capacity of dc line") # Capacity of DC line [MW]
 
+    #alphaCO2 = m.ext[:variables][:alphaCO2] = @variable(m, lower_bound=0, base_name="carbon price") # Carbon price [EUR]
+
+
     # Objective
     obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in I, n in N)  + sum(IC_var_AC[find_line_number(network["AC_Lines"], la)]*varlac[la] for la in L_ac) + sum(IC_var_DC[find_line_number(network["DC_Lines"], ld)]*varldc[ld] for ld in L_dc) + sum(VC[i]*g[i,j,n] for i in I, j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N))
-                                                                                           
+    
+    #obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in I, n in N)  + sum(IC_var_AC[find_line_number(network["AC_Lines"], la)]*varlac[la] for la in L_ac) + sum(IC_var_DC[find_line_number(network["DC_Lines"], ld)]*varldc[ld] for ld in L_dc) + sum((FC[i]*g[i,j,n] + CO2[i]*alphaCO2*g[i,j,n]) for i in I, j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N))
+
+
     # Constraints
     con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in I) + sum(pl[j,l] for l in L if l[1] == n; init=0) >= D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0)) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
     con_LoL = m.ext[:constraints][:con_LoL] = @constraint(m, [j=J,n=N], 0 <= ens[j,n] <= D[Symbol(n)][j]) # Loss of Load constraint
@@ -294,6 +309,11 @@ function build_model!(m::Model)
     con_WONGl = m.ext[:constraints][:con_WONGl] = @constraint(m, [i=["WindOnshore"], j=J, n=N], g[i,j,n] <= AFWON[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
     con_WOFFGl = m.ext[:constraints][:con_WOFFGl] = @constraint(m, [i=["WindOffshore"], j=J, n=intersect(countries, countries_windoff)], g[i,j,n] <= AFWOFF[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
     con_CWO_WOFF = m.ext[:constraints][:con_CWO_WOFF] = @constraint(m, [i=["WindOffshore"], j=J, n=setdiff(countries, countries_windoff)], g[i,j,n] == 0.0) # No wind offshore in these countries
+
+    con_alphaCO2 = m.ext[:constraints][:con_alphaCO2] = @constraint(m, [i=I_CO2, j=J, n=N], g[i,j,n] == 0.0 )
+
+    #con_alphaCO2 = m.ext[:constraints][:con_alphaCO2] = @constraint(m, [i=I, j=J, n=N], CO2[i]*alphaCO2*g[i,j,n] == 0.0 )
+
 end
 
 #network["DC_Lines"]["DC_$(find_line_number(network["DC_Lines"],  ["UK", "BE"]))"]["Length"]
@@ -363,7 +383,7 @@ color_palette= Generator_colors, title="Installed Generation Capacity (MW)")
 
 # Transmission Network Italy with constructed lines
 function plot_transmission_needed(dict1::Dict, dict2::Dict)
-	img 	= load("/Users/henryverdoodt/Documents/CODE/IMAGES/europe_map.jpeg");
+	img 	= load("/Users/henryverdoodt/Documents/CODE/IMAGES/Other/europe_map.jpeg");
     countries = Dict("Spain" => (380, 1400), "France" => (640, 1140), "Belgium" => (722, 960), "Germany" => (880, 960), 
                  "Netherlands" => (745, 885), "Denmark" => (866, 720), "Norway" => (890, 482), "United Kingdom" => (553, 835))
 

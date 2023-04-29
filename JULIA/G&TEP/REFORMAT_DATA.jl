@@ -29,10 +29,10 @@ using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyCha
 
 
 # Read the CSV file into a DataFrame
-demand_entso = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/DEMAND/PECD-country-demand_national_estimates-2025.csv", DataFrame)
-solar_entso = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/SOLAR/PECD-2021.3-country-LFSolarPV-2025.csv", DataFrame)
-windon_entso = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDON/PECD-2021.3-country-Onshore-2025.csv", DataFrame)
-windoff_entso = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDOFF/PECD-2021.3-country-Offshore-2025.csv", DataFrame)
+demand_entso = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/DEMAND/PECD-country-demand_national_estimates-2030.csv", DataFrame)
+solar_entso = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/SOLAR/PECD-2021.3-country-LFSolarPV-2030.csv", DataFrame)
+windon_entso = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDON/PECD-2021.3-country-Onshore-2030.csv", DataFrame)
+windoff_entso = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDOFF/PECD-2021.3-country-Offshore-2030.csv", DataFrame)
 
 # Available data for following countries in data demand, solar, windon, windoff
 countries_demand_entso = unique(demand_entso.country) # ["AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK", "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "TR", "UA", "UK"]
@@ -145,12 +145,12 @@ function reformat_entso_windoff(windoff::DataFrame, countries::Vector{String} , 
     end
 end
 
-#= 
+
 # Parameter for function to reformat data
 countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
 y = 2016.0    # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
 aggregate_3h = true
- =#
+
 
 # Call reformated ENTSO DATA
 reformat_entso_demand(demand_entso, countries, countries_demand_entso, y, aggregate_3h)
