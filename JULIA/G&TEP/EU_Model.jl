@@ -28,69 +28,11 @@ using StatsPlots, Images
 include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/REFORMAT_DATA.jl")
 include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/PLOT_MODEL.jl")
 
-# Transmission Network West Europe
-function plot_transmission_network()
-	img 	= load("/Users/henryverdoodt/Documents/CODE/IMAGES/Other/europe_map.jpeg");
-    countries = Dict("Spain" => (380, 1400), "France" => (640, 1140), "Belgium" => (722, 960), "Germany" => (880, 960), 
-                 "Netherlands" => (745, 885), "Denmark" => (866, 720), "Norway" => (890, 482), "United Kingdom" => (553, 835))
 
-	plot(img, axis=([], false))
-	plot!([countries["Spain"][1],countries["France"][1]],
-		  [countries["Spain"][2],countries["France"][2]],
-		  color="blue", linewidth=2, label="HVAC")
-	plot!([countries["France"][1],countries["Belgium"][1]],
-		  [countries["France"][2],countries["Belgium"][2]],
-		  color="blue", linewidth=2, label=:none)
-	plot!([countries["France"][1],countries["Germany"][1]],
-		  [countries["France"][2],countries["Germany"][2]],
-		  color="blue", linewidth=2, label=:none)
-	plot!([countries["Germany"][1],countries["Belgium"][1]],
-		  [countries["Germany"][2],countries["Belgium"][2]],
-		  color="blue", linewidth=2, label=:none)
-    plot!([countries["Belgium"][1],countries["Netherlands"][1]],
-		  [countries["Belgium"][2],countries["Netherlands"][2]],
-		  color="blue", linewidth=2, label=:none)
-	plot!([countries["Netherlands"][1],countries["Germany"][1]],
-		  [countries["Netherlands"][2],countries["Germany"][2]],
-		  color="blue", linewidth=2, label=:none)
-	plot!([countries["Germany"][1],countries["Denmark"][1]],
-		  [countries["Germany"][2],countries["Denmark"][2]],
-		  color="blue", linewidth=2, label=:none)
-
-	plot!([countries["France"][1],countries["United Kingdom"][1]],
-		  [countries["France"][2],countries["United Kingdom"][2]],
-		  color="red", linewidth=2, label="HVDC")
-	plot!([countries["United Kingdom"][1],countries["Belgium"][1]],
-		  [countries["United Kingdom"][2],countries["Belgium"][2]],
-		  color="red", linewidth=2, label=:none)
-    plot!([countries["United Kingdom"][1],countries["Norway"][1]],
-		  [countries["United Kingdom"][2],countries["Norway"][2]],
-		  color="red", linewidth=2, label=:none)
-	plot!([countries["Norway"][1],countries["Belgium"][1]],
-		  [countries["Norway"][2],countries["Belgium"][2]],
-		  color="red", linewidth=2, label=:none)
-    plot!([countries["Norway"][1],countries["Netherlands"][1]],
-		  [countries["Norway"][2],countries["Netherlands"][2]],
-		  color="red", linewidth=2, label=:none)
-	plot!([countries["Norway"][1],countries["Denmark"][1]],
-		  [countries["Norway"][2],countries["Denmark"][2]],
-		  color="red", linewidth=2, label=:none)
-    plot!([countries["Netherlands"][1],countries["Denmark"][1]],
-		  [countries["Netherlands"][2],countries["Denmark"][2]],
-		  color="red", linewidth=2, label=:none)
-
-	# end
-	scatter!([nc[1] for nc in values(countries)],
-			 [nc[2] for nc in values(countries)], markersize=3,
-			 color="black", label=:none)
-end
-
-plot_transmission_network()
-
-# PARAMETERS
-y = 2016.0
-countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
-aggregate_3h = false
+############################ DATA PARAMETERS ############################
+countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
+y = 1982.0    # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
+aggregate_3h = true
 
 countries_demand = countries_demand_entso
 countries_solar = countries_solar_entso
@@ -104,7 +46,7 @@ won = reformat_entso_windon(windon_entso, countries, countries_windon_entso, y, 
 woff = reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, y, aggregate_3h)
 data = YAML.load_file(joinpath(@__DIR__, "overview_data.yaml"))
 network = YAML.load_file(joinpath(@__DIR__, "network_west_europe.yaml"))
-println("Done")
+println("DATA Done")
 
 
 ## Step 2: create model & pass data to model
@@ -124,12 +66,13 @@ function define_sets!(m::Model, data::Dict, network::Dict)
     m.ext[:sets] = Dict()
     J = m.ext[:sets][:J] = 1:timestep(aggregate_3h) # Timesteps  # 2920  # 8760
     I = m.ext[:sets][:I] = [id for id in keys(data["PowerSector"]) if id ∉ ["SPP_lignite", "SPP_coal", "CCGT_old"]] # Generators per type
-    L_ac = m.ext[:sets][:AC_Lines] = [network["AC_Lines"]["AC_$(i)"]["Connection"] for i in 1:7] # AC Lines
-    L_dc = m.ext[:sets][:DC_Lines] = [network["DC_Lines"]["DC_$(i)"]["Connection"] for i in 1:7] # DC Lines
+    L_ac = m.ext[:sets][:AC_Lines] = [network["AC_Lines"]["AC_$(i)"]["Connection"] for i in 1:length(keys(network["AC_Lines"]))] # AC Lines
+    L_dc = m.ext[:sets][:DC_Lines] = [network["DC_Lines"]["DC_$(i)"]["Connection"] for i in 1:length(keys(network["DC_Lines"]))] # DC Lines
     L = m.ext[:sets][:Lines] = union(m.ext[:sets][:AC_Lines],m.ext[:sets][:DC_Lines]) # Lines
-    N = m.ext[:sets][:Nodes] =  [network["Nodes"]["Node_$(i)"] for i in 1:8]# Nodes
+    N = m.ext[:sets][:Nodes] =  [network["Nodes"]["Node_$(i)"] for i in 1:length(keys(network["Nodes"]))]# Nodes
     return m # return model
 end
+
 
 # Step 2b: add time series
 function process_time_series_data!(m::Model, dem::DataFrame, sol::DataFrame, won::DataFrame, woff::DataFrame)
@@ -163,7 +106,6 @@ function process_time_series_data!(m::Model, dem::DataFrame, sol::DataFrame, won
     return m
 end
 
-
 # step 2c: process input parameters
 function process_parameters!(m::Model, data::Dict, network::Dict)
     # extract sets
@@ -194,21 +136,19 @@ function process_parameters!(m::Model, data::Dict, network::Dict)
     #FC = m.ext[:parameters][:FC] = Dict(i => ((d[SubString(i,1:length(i))]["fuelCosts"])/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # EUR/MWh, Fuelcost Cost of unit i
     #CO2 = m.ext[:parameters][:CO2] = Dict(i => ((d[SubString(i,1:length(i))]["emissions"])/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # ton/MWh, Variable Cost of unit i
 
-
-    
     # parameters of transmission lines AC
-    Fl_MAX_AC = m.ext[:parameters][:Fl_MAX_AC] = [network["AC_Lines"]["AC_$(i)"]["Capacity"] for i in 1:7] # MW, AC Lines
-    L_length_AC = m.ext[:parameters][:L_length_AC] = [network["AC_Lines"]["AC_$(i)"]["Length"] for i in 1:7] # km, Length of AC transmission line
-    L_price_AC = m.ext[:parameters][:L_price_AC] = [network["AC_Lines"]["AC_$(i)"]["Price"] for i in 1:7] # EUR/km.MW, Price of AC line per unit length
-    OC_var_AC = m.ext[:parameters][:OC_var_AC] = [network["AC_Lines"]["AC_$(i)"]["Price"] * network["AC_Lines"]["AC_$(i)"]["Length"] for i in 1:7] # EUR/MW, Investment Cost for AC Transmission line
-    IC_var_AC = m.ext[:parameters][:IC_var_AC] = [(network["AC_Lines"]["AC_$(i)"]["Price"] * network["AC_Lines"]["AC_$(i)"]["Length"]*disc_r)/(1-(1/(1+disc_r)^(network["Lifetime_ac"]))) for i in 1:7] # EUR/MWy, Investment Cost of AC line
+    Fl_MAX_AC = m.ext[:parameters][:Fl_MAX_AC] = [network["AC_Lines"]["AC_$(i)"]["Capacity"] for i in 1:length(keys(network["AC_Lines"]))] # MW, AC Lines
+    L_length_AC = m.ext[:parameters][:L_length_AC] = [network["AC_Lines"]["AC_$(i)"]["Length"] for i in 1:length(keys(network["AC_Lines"]))] # km, Length of AC transmission line
+    L_price_AC = m.ext[:parameters][:L_price_AC] = [network["AC_Lines"]["AC_$(i)"]["Price"] for i in 1:length(keys(network["AC_Lines"]))] # EUR/km.MW, Price of AC line per unit length
+    OC_var_AC = m.ext[:parameters][:OC_var_AC] = [network["AC_Lines"]["AC_$(i)"]["Price"] * network["AC_Lines"]["AC_$(i)"]["Length"] for i in 1:length(keys(network["AC_Lines"]))] # EUR/MW, Investment Cost for AC Transmission line
+    IC_var_AC = m.ext[:parameters][:IC_var_AC] = [(network["AC_Lines"]["AC_$(i)"]["Price"] * network["AC_Lines"]["AC_$(i)"]["Length"]*disc_r)/(1-(1/(1+disc_r)^(network["Lifetime_ac"]))) for i in 1:length(keys(network["AC_Lines"]))] # EUR/MWy, Investment Cost of AC line
 
     # parameters of transmission lines DC 
-    Fl_MAX_DC = m.ext[:parameters][:Fl_MAX_DC] = [network["DC_Lines"]["DC_$(i)"]["Capacity"] for i in 1:7] # MW, DC Lines
-    L_length_DC = m.ext[:parameters][:L_length_DC] = [network["DC_Lines"]["DC_$(i)"]["Length"] for i in 1:7] # km, Length of DC transmission line
-    L_price_DC = m.ext[:parameters][:L_price_DC] = [network["DC_Lines"]["DC_$(i)"]["Price"] for i in 1:7] # EUR/km.MW, Price of DC line per unit length
-    OC_var_DC = m.ext[:parameters][:OC_var_DC] = [network["DC_Lines"]["DC_$(i)"]["Price"] * network["DC_Lines"]["DC_$(i)"]["Length"] for i in 1:7] # EUR/MW, Investment Cost for DC Transmission line
-    IC_var_DC = m.ext[:parameters][:IC_var_DC] = [(network["DC_Lines"]["DC_$(i)"]["Price"] * network["DC_Lines"]["DC_$(i)"]["Length"]*disc_r)/(1-(1/(1+disc_r)^(network["Lifetime_dc"]))) for i in 1:7] # EUR/MWy, Investment Cost of DC line
+    Fl_MAX_DC = m.ext[:parameters][:Fl_MAX_DC] = [network["DC_Lines"]["DC_$(i)"]["Capacity"] for i in 1:length(keys(network["DC_Lines"]))] # MW, DC Lines
+    L_length_DC = m.ext[:parameters][:L_length_DC] = [network["DC_Lines"]["DC_$(i)"]["Length"] for i in 1:length(keys(network["DC_Lines"]))] # km, Length of DC transmission line
+    L_price_DC = m.ext[:parameters][:L_price_DC] = [network["DC_Lines"]["DC_$(i)"]["Price"] for i in 1:length(keys(network["DC_Lines"]))] # EUR/km.MW, Price of DC line per unit length
+    OC_var_DC = m.ext[:parameters][:OC_var_DC] = [network["DC_Lines"]["DC_$(i)"]["Price"] * network["DC_Lines"]["DC_$(i)"]["Length"] for i in 1:length(keys(network["DC_Lines"]))] # EUR/MW, Investment Cost for DC Transmission line
+    IC_var_DC = m.ext[:parameters][:IC_var_DC] = [(network["DC_Lines"]["DC_$(i)"]["Price"] * network["DC_Lines"]["DC_$(i)"]["Length"]*disc_r)/(1-(1/(1+disc_r)^(network["Lifetime_dc"]))) for i in 1:length(keys(network["DC_Lines"]))] # EUR/MWy, Investment Cost of DC line
     Fl_MAX = m.ext[:parameters][:Fl_MAX] = cat(Fl_MAX_AC, Fl_MAX_DC, dims=1) # MW, All Lines, Maximum capacity [USE cat() OR union() function??]
     # return model
     return m
@@ -347,6 +287,11 @@ generation = plot_generator_capacities(data_matrix , nodes , Generator_colors, G
 
 trans_ac_dict = get_ac_transmission_capacity(m, L_ac)
 trans_dc_dict = get_dc_transmission_capacity(m, L_dc)
+transmission_map_full = plot_transmission_network(trans_ac_dict, trans_dc_dict, countries_coord)
 transmission_map = plot_transmission_needed(trans_ac_dict, trans_dc_dict, countries_coord)
 
 plot(generation, transmission_map, layout=(1,2), size=(1200,500))
+
+
+
+

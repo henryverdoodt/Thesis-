@@ -46,14 +46,14 @@ function matrix_generators_data(gen_dict::Dict{String, Dict{String, Float64}})
             data[i, j] = gen_dict[node][unit_type]/1000
         end
     end
-    cols_to_remove = findall(all.(x -> x == 0.0, eachcol(data)))
-    return data[:, setdiff(1:size(data, 2), cols_to_remove)] 
+    #cols_to_remove = findall(all.(x -> x == 0.0, eachcol(data)))
+    #data = data[:, setdiff(1:size(data, 2), cols_to_remove)]
+    return data
 end
 
 Generator_colors = Dict("Biomass" => :green, "WindOffshore" => :blue, "CCGT_new" => :orange, "WindOnshore" => :lightblue, "Nuclear" => :purple, "Solar" => :gold, "OCGT" => :red, "ICE" => :gray)
-
-Generator_colors = [:green, :blue, :lightblue, :gold]  #[:green, :lightblue, :orange, :blue, :purple, :gold, :red, :gray]
-Generator_labels = ["Biomass" "WindOffshore" "WindOnshore" "Solar"]  #["Biomass" "WindOnshore" "CCGT_new" "WindOffshore" "Nuclear" "Solar" "OCGT" "ICE"]
+Generator_colors = [:green, :lightblue, :orange, :blue, :purple, :gold, :red, :gray]    # [:green, :blue, :lightblue, :gold]  
+Generator_labels = ["Biomass" "WindOnshore" "CCGT_new" "WindOffshore" "Nuclear" "Solar" "OCGT" "ICE"]   # ["Biomass" "WindOffshore" "WindOnshore" "Solar"]  
 
 function plot_generator_capacities(data_matrix::Matrix{Float64}, nodes::Vector{String}, Generator_colors::Vector{Symbol}, Generator_labels::Matrix{String})
     # Plot generation stacked bar chart
@@ -71,7 +71,32 @@ end
 
 # Transmission Network West EU 
 countries_coord = Dict("ES" => (380, 1400), "FR" => (640, 1140), "BE" => (722, 960), "DE" => (880, 960), 
-                 "NL" => (745, 885), "DK" => (866, 720), "NO" => (890, 482), "UK" => (553, 835))
+                 "NL" => (745, 885), "DK" => (866, 720), "NO" => (890, 482), "UK" => (553, 835), "PT" => (210, 1380), 
+                 "IT" => (930, 1330), "CH" => (800,1140), "AT" => (1000,1120), "IE" => (380,780), "SE" => (1000, 550), "FI" => (1230, 400))
+
+#countries_coord = Dict("ES" => (380, 1400), "FR" => (640, 1140), "BE" => (722, 960), "DE" => (880, 960), "NL" => (745, 885), "DK" => (866, 720), "NO" => (890, 482), "UK" => (553, 835))
+
+function plot_transmission_network(dict1::Dict{Vector{String}, Float64}, dict2::Dict{Vector{String}, Float64}, countries::Dict{String, Tuple{Int64, Int64}})
+    img 	= load("/Users/henryverdoodt/Documents/CODE/IMAGES/Other/europe_map.jpeg")
+
+    plot(img, axis=([], false), title="Transmission Lines")
+
+    for (from, to) in keys(dict1)
+        plot!([countries[from][1], countries[to][1]],
+                [countries[from][2], countries[to][2]],
+                color="blue", linewidth= 2, label=:none) 
+    end
+
+    for (from, to) in keys(dict2)
+        plot!([countries[from][1], countries[to][1]],
+                [countries[from][2], countries[to][2]],
+                color="red", linewidth= 2, label=:none) 
+    end
+ 
+    scatter!([nc[1] for nc in values(countries)],
+             [nc[2] for nc in values(countries)],
+             markersize=3, color="black", label=:none)
+end
 
 function plot_transmission_needed(dict1::Dict{Vector{String}, Float64}, dict2::Dict{Vector{String}, Float64}, countries::Dict{String, Tuple{Int64, Int64}})
     img 	= load("/Users/henryverdoodt/Documents/CODE/IMAGES/Other/europe_map.jpeg")

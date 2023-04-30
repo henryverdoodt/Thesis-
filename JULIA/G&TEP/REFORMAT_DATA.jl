@@ -147,8 +147,8 @@ end
 
 
 # Parameter for function to reformat data
-countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
-y = 2016.0    # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
+countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
+y = 1982.0    # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
 aggregate_3h = true
 
 
@@ -207,7 +207,7 @@ end
 #= 
 # Parameter for function to reformat data
 year = 2001    # 1952-2100
-countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
+countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]     #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
  =#
 
 # Call reformated COPERNICUS DATA
