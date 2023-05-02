@@ -40,7 +40,16 @@ countries_solar_entso= unique(solar_entso.country)    # ["AL", "AT", "BA", "BE",
 countries_windon_entso = unique(windon_entso.country) # MT is in solar & demand but not in windon => # ["AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "TR", "UA", "UK"]
 countries_windoff_entso= unique(windoff_entso.country) # ["BE", "DE", "DK", "FI", "FR", "IE", "IT", "NL", "PT", "SE", "UK"]
 
+
+
+
+PT_IT = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/Demand Data/PT_IT.csv", DataFrame)
+
+
+
+
 # Functions to reformat ENTSO DATA
+#= 
 function reformat_entso_demand(demand::DataFrame, countries::Vector{String} , countries_demand::Vector{String3}, y::Float64, aggregate_3h::Bool)
     dem = DataFrame(col1 = Float64[])
     for c in intersect(countries, countries_demand)
@@ -66,7 +75,43 @@ function reformat_entso_demand(demand::DataFrame, countries::Vector{String} , co
         return dem
     end
 end
+ =#
 
+function reformat_entso_demand(data::DataFrame, countries::Vector{String}, countries_dem::Vector{String3}, years::Vector{Float64}, weights::Vector{Float64}, aggregate_3h::Bool)
+    d = DataFrame()
+    for c in intersect(countries, countries_dem)
+        dem_values = []
+        for i in 1:length(years)
+            year = years[i]
+            weight = weights[i]
+            data1 = dropmissing(data[data.country .== c, [:year, :dem_MW]], disallowmissing=true)
+            data2 = dropmissing(data1[data1.year .== year, [:dem_MW]], disallowmissing=true)
+            rename!(data2, :dem_MW => c)
+            push!(dem_values, data2[!, c] * weight)
+        end
+        sum_of_vectors = reduce((x, y) -> x .+ y, [dem_values[1], dem_values[2], dem_values[3]])
+        sov = DataFrame(c => sum_of_vectors)
+        d = isempty(d) ? hcat(sov) : hcat(d, sov)
+    end
+    if aggregate_3h
+        nrows_new = Int(ceil(size(d, 1)/3))
+        dem_3h = DataFrame()
+        for col in names(d)
+            col_data = []
+            for i in 1:nrows_new
+                row_start = (i-1)*3 + 1
+                row_end = min(i*3, size(d, 1))
+                push!(col_data, mean(d[row_start:row_end, col]))
+            end
+            dem_3h[!, col] = col_data
+        end
+        return dem_3h
+    else
+        return d   
+    end
+end
+
+#= 
 function reformat_entso_solar(data::DataFrame, countries::Vector{String} , countries_cf::Vector{String3}, y::Float64, aggregate_3h::Bool)
     d = DataFrame(col1 = Float64[])
     for c in intersect(countries, countries_cf)
@@ -92,7 +137,45 @@ function reformat_entso_solar(data::DataFrame, countries::Vector{String} , count
         return d   
     end
 end
+ =#
+function reformat_entso_solar(data::DataFrame, countries::Vector{String}, countries_cf::Vector{String3}, years::Vector{Float64}, weights::Vector{Float64}, aggregate_3h::Bool)
+    d = DataFrame()
+    for c in intersect(countries, countries_cf)
+        cf_values = []
+        for i in 1:length(years)
+            year = years[i]
+            weight = weights[i]
+            data1 = dropmissing(data[data.country .== c, [:year, :cf]], disallowmissing=true)
+            data2 = dropmissing(data1[data1.year .== year, [:cf]], disallowmissing=true)
+            rename!(data2, :cf => c)
+            push!(cf_values, data2[!, c] * weight)
+        end
+        sum_of_vectors = reduce((x, y) -> x .+ y, [cf_values[1], cf_values[2], cf_values[3]])
+        sov = DataFrame(c => sum_of_vectors)
+        d = isempty(d) ? hcat(sov) : hcat(d, sov)
+    end
+    if aggregate_3h
+        nrows_new = Int(ceil(size(d, 1)/3))
+        sol_3h = DataFrame()
+        for col in names(d)
+            col_data = []
+            for i in 1:nrows_new
+                row_start = (i-1)*3 + 1
+                row_end = min(i*3, size(d, 1))
+                push!(col_data, mean(d[row_start:row_end, col]))
+            end
+            sol_3h[!, col] = col_data
+        end
+        return sol_3h
+    else
+        return d   
+    end
+end
 
+#countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
+#reformat_entso_solar(solar_entso, countries, countries_solar_entso, [1995.0, 2008.0, 2009.0], [0.233, 0.367, 0.4], false)
+
+#= 
 function reformat_entso_windon(windon::DataFrame, countries::Vector{String} , countries_windon::Vector{String3}, y::Float64, aggregate_3h::Bool)
     won = DataFrame(col1 = Float64[])
     for c in intersect(countries, countries_windon)
@@ -118,7 +201,42 @@ function reformat_entso_windon(windon::DataFrame, countries::Vector{String} , co
         return won
     end
 end
+ =#
 
+function reformat_entso_windon(data::DataFrame, countries::Vector{String}, countries_windon::Vector{String3}, years::Vector{Float64}, weights::Vector{Float64}, aggregate_3h::Bool)
+    d = DataFrame()
+    for c in intersect(countries, countries_windon)
+        cf_values = []
+        for i in 1:length(years)
+            year = years[i]
+            weight = weights[i]
+            data1 = dropmissing(data[data.country .== c, [:year, :cf]], disallowmissing=true)
+            data2 = dropmissing(data1[data1.year .== year, [:cf]], disallowmissing=true)
+            rename!(data2, :cf => c)
+            push!(cf_values, data2[!, c] * weight)
+        end
+        sum_of_vectors = reduce((x, y) -> x .+ y, [cf_values[1], cf_values[2], cf_values[3]])
+        sov = DataFrame(c => sum_of_vectors)
+        d = isempty(d) ? hcat(sov) : hcat(d, sov)
+    end
+    if aggregate_3h
+        nrows_new = Int(ceil(size(d, 1)/3))
+        won_3h = DataFrame()
+        for col in names(d)
+            col_data = []
+            for i in 1:nrows_new
+                row_start = (i-1)*3 + 1
+                row_end = min(i*3, size(d, 1))
+                push!(col_data, mean(d[row_start:row_end, col]))
+            end
+            won_3h[!, col] = col_data
+        end
+        return won_3h
+    else
+        return d   
+    end
+end
+#= 
 function reformat_entso_windoff(windoff::DataFrame, countries::Vector{String} , countries_windoff::Vector{String3}, y::Float64, aggregate_3h::Bool)
     woff = DataFrame(col1 = Float64[])
     for c in intersect(countries, countries_windoff)
@@ -144,6 +262,40 @@ function reformat_entso_windoff(windoff::DataFrame, countries::Vector{String} , 
         return woff
     end
 end
+ =#
+function reformat_entso_windoff(data::DataFrame, countries::Vector{String}, countries_windoff::Vector{String3}, years::Vector{Float64}, weights::Vector{Float64}, aggregate_3h::Bool)
+    d = DataFrame()
+    for c in intersect(countries, countries_windoff)
+        cf_values = []
+        for i in 1:length(years)
+            year = years[i]
+            weight = weights[i]
+            data1 = dropmissing(data[data.country .== c, [:year, :cf]], disallowmissing=true)
+            data2 = dropmissing(data1[data1.year .== year, [:cf]], disallowmissing=true)
+            rename!(data2, :cf => c)
+            push!(cf_values, data2[!, c] * weight)
+        end
+        sum_of_vectors = reduce((x, y) -> x .+ y, [cf_values[1], cf_values[2], cf_values[3]])
+        sov = DataFrame(c => sum_of_vectors)
+        d = isempty(d) ? hcat(sov) : hcat(d, sov)
+    end
+    if aggregate_3h
+        nrows_new = Int(ceil(size(d, 1)/3))
+        woff_3h = DataFrame()
+        for col in names(d)
+            col_data = []
+            for i in 1:nrows_new
+                row_start = (i-1)*3 + 1
+                row_end = min(i*3, size(d, 1))
+                push!(col_data, mean(d[row_start:row_end, col]))
+            end
+            woff_3h[!, col] = col_data
+        end
+        return woff_3h
+    else
+        return d   
+    end
+end
 
 
 # Parameter for function to reformat data
@@ -151,14 +303,14 @@ countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "
 y = 1982.0    # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
 aggregate_3h = true
 
-
+#= 
 # Call reformated ENTSO DATA
 reformat_entso_demand(demand_entso, countries, countries_demand_entso, y, aggregate_3h)
 reformat_entso_solar(solar_entso, countries, countries_solar_entso, y, aggregate_3h)
 reformat_entso_windon(windon_entso, countries, countries_windon_entso, y, aggregate_3h)
 reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, y, aggregate_3h)
 
-
+ =#
 
 #############################################################################################################################################################
 #############################################################################################################################################################
@@ -183,37 +335,59 @@ function reformat_coper_solar(solar::DataFrame, countries::Vector{String} , coun
     df_countries = select(solar, [:Date, Symbol.(intersect(countries, countries_solar))]...)
     df_year = df_countries[findall(x -> year == parse(Int, split(x, "-")[1]), df_countries.Date), :]
     sol = dropmissing(select(df_year, Not(:Date)), disallowmissing=true)
-    sol = select(sol, Not(:NO))
-    #sol = filter(row -> !any(isnan, row), sol)
-    return sol
+
+    replace_nan(v) = map(x -> isnan(x) ? zero(x) : x, v)
+    df2 = map(replace_nan, eachcol(sol))
+
+    sol2 = DataFrame()
+    for (i, col) in enumerate(names(sol))
+        sol2[!, col] = df2[i]
+    end
+    return sol2
 end
+
 
 function reformat_coper_windon(windon::DataFrame, countries::Vector{String} , countries_windon::Vector{String}, year::Int64)
     df_countries = select(windon, [:Date, Symbol.(intersect(countries, countries_windon))]...)
     df_year = df_countries[findall(x -> year == parse(Int, split(x, "-")[1]), df_countries.Date), :]
     won = dropmissing(select(df_year, Not(:Date)), disallowmissing=true)
-    #won = filter(row -> !any(isnan, row), won)
-    return won
+
+    replace_nan(v) = map(x -> isnan(x) ? zero(x) : x, v)
+    df2 = map(replace_nan, eachcol(won))
+
+    won2 = DataFrame()
+    for (i, col) in enumerate(names(won))
+        won2[!, col] = df2[i]
+    end
+    return won2
 end
 
 function reformat_coper_windoff(windoff::DataFrame, countries::Vector{String} , countries_windoff::Vector{String}, year::Int64)
     df_countries = select(windoff, [:Date, Symbol.(intersect(countries, countries_windoff))]...)
     df_year = df_countries[findall(x -> year == parse(Int, split(x, "-")[1]), df_countries.Date), :]
     woff = dropmissing(select(df_year, Not(:Date)), disallowmissing=true)
-    #woff = filter(row -> !any(isnan, row), woff)
-    return woff
+
+    replace_nan(v) = map(x -> isnan(x) ? zero(x) : x, v)
+    df2 = map(replace_nan, eachcol(woff))
+
+    woff2 = DataFrame()
+    for (i, col) in enumerate(names(woff))
+        woff2[!, col] = df2[i]
+    end
+    return woff2
 end
 
-#= 
+
 # Parameter for function to reformat data
-year = 2001    # 1952-2100
+year = 2030    # 1952-2100
 countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]     #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
- =#
+
 
 # Call reformated COPERNICUS DATA
 reformat_coper_solar(solar_coper_cnrm, countries, countries_solar_coper_cnrm, year)
 reformat_coper_windon(windon_coper_cnrm, countries, countries_windon_coper_cnrm, year)
 reformat_coper_windoff(windoff_coper_cnrm, countries, countries_windoff_coper_cnrm, year)
+
 
 #############################################################################################################################################################
 #############################################################################################################################################################

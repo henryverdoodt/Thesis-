@@ -31,21 +31,36 @@ include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/PLOT_MODEL.jl")
 
 ############################ DATA PARAMETERS ############################
 countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
-y = 1982.0    # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
-aggregate_3h = true
+y = 2009.0    # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
+year = 2030
+representative_years = [1995.0, 2008.0, 2009.0]
+weights = [0.233, 0.367, 0.4]
+aggregate_3h = false
 
-countries_demand = countries_demand_entso
-countries_solar = countries_solar_entso
-countries_windon = countries_windon_entso
-countries_windoff = countries_windoff_entso
+countries_demand = countries_demand_entso       
+countries_solar = countries_solar_entso         # countries_solar_coper_cnrm
+countries_windon = countries_windon_entso       # countries_windon_coper_cnrm
+countries_windoff = countries_windoff_entso     # countries_windoff_coper_cnrm
+
+countries_dem = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "AT", "SE"]
 
 # Read the CSV file into a DataFrame
-dem = reformat_entso_demand(demand_entso, countries, countries_demand_entso, y, aggregate_3h)
-sol = reformat_entso_solar(solar_entso, countries, countries_solar_entso, y, aggregate_3h)
-won = reformat_entso_windon(windon_entso, countries, countries_windon_entso, y, aggregate_3h)
-woff = reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, y, aggregate_3h)
+dem = reformat_entso_demand(demand_entso, countries_dem, countries_demand_entso, representative_years, weights, aggregate_3h)
+PT_IT = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/Demand Data/PT_IT.csv", DataFrame)
+
+dem = hcat(dem, PT_IT)
+
+sol = reformat_entso_solar(solar_entso, countries, countries_solar_entso, representative_years, weights, aggregate_3h)
+won = reformat_entso_windon(windon_entso, countries, countries_windon_entso, representative_years, weights, aggregate_3h) 
+woff = reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, representative_years, weights, aggregate_3h)
+
+#sol = reformat_entso_solar(solar_entso, countries, countries_solar_entso, y, aggregate_3h)          #reformat_coper_solar(solar_coper_cnrm, countries, countries_solar_coper_cnrm, year)           # reformat_entso_solar(solar_entso, countries, countries_solar_entso, y, aggregate_3h)
+#won = reformat_entso_windon(windon_entso, countries, countries_windon_entso, y, aggregate_3h)       #reformat_coper_windon(windon_coper_cnrm, countries, countries_windon_coper_cnrm, year)        # reformat_entso_windon(windon_entso, countries, countries_windon_entso, y, aggregate_3h)
+#woff = reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, y, aggregate_3h)    #reformat_coper_windoff(windoff_coper_cnrm, countries, countries_windoff_coper_cnrm, year)     # reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, y, aggregate_3h)
+
 data = YAML.load_file(joinpath(@__DIR__, "overview_data.yaml"))
 network = YAML.load_file(joinpath(@__DIR__, "network_west_europe.yaml"))
+
 println("DATA Done")
 
 
