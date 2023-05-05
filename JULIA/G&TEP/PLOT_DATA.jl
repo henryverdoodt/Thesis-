@@ -1,6 +1,12 @@
 ## Master Thesis: Analyse the impact of climate change on a G&TEP of EU Power System
 # Author: Henry Verdoodt
 # Last update: April 4, 2023
+using Pkg
+Pkg.add("PlotlyJS")
+
+
+# Include Files
+include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/REFORMAT_DATA.jl")
 
 #############################################################################################################################################################
 #############################################################################################################################################################
@@ -74,6 +80,7 @@ solar = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/SOLAR/SOLA
 ##### PARAMETERS #####
 year = ["2100"] # 1952-2100
 s = "winter" # plot for season s ("summer", "autumn", "winter", "spring")
+count = "Belgium"
 
 # Dictionaries with countries name, abreviation, number FOR SOLAR
 country_codes = Dict("Albania" => "AL", "Austria" => "AT", "Bosnia and Herzegovina" => "BA", "Belgium" => "BE", "Bulgaria" => "BG", "Switzerland" => "CH","Cyprus" => "CY","Czech Republic" => "CZ",
@@ -92,6 +99,11 @@ t1 = ["01:30:00"]; t2 = ["04:30:00"]; t3 = ["07:30:00"]; t4 = ["10:30:00"]; t5 =
 
 #############################################################################################################################################################
 # filter the dataframe to only include rows for the selected year(s) FOR SOLAR
+rows1 = findall(row -> begin
+                      year = parse(Int, split(row, "-")[1])
+                      2071 <= year <= 2100
+                  end, solar[!, :Date])
+
 rows1 = findall(row -> split(row, "-")[1] in Set(year), solar[!, :Date])
 solar_year = solar[rows1, :]
 
@@ -125,6 +137,64 @@ plot_solar_curve(s, seasons[s])
 
 # UNCOMMENT TO SAVE the plot to the IMAGES file 
 #savefig("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/SOLAR/IMAGES/$season Solar yield curve of year $year.png")
+
+#############################################################################################################################################################
+###############################                                      BOXPLOT SOLAR                                            ###############################
+#############################################################################################################################################################
+using CSV, DataFrames, Plots, Statistics
+
+# Load data from csv file
+solar = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/SOLAR/SOLAR_CL_CF_3H_RCP8_ALADIN_CNRM_1952_2100.csv", DataFrame)
+
+summer = ["06", "07", "08"]; autumn = ["09", "10", "11"]; winter = ["12", "01", "02"]; spring = ["03", "04", "05"]
+
+#############################################################################################################################################################
+# filter the dataframe to only include rows for the selected year(s) FOR SOLAR
+rows1 = findall(row -> begin
+                      year = parse(Int, split(row, "-")[1])
+                      2071 <= year <= 2100
+                  end, solar[!, :Date])
+
+solar_year = solar[rows1, :]
+
+# Dataframe with all solar cf per country for specific years
+solar_summer = solar_year[findall(row -> split(row, "-")[2] in Set(summer), solar_year[!, :Date]), :]
+solar_autumn = solar_year[findall(row -> split(row, "-")[2] in Set(autumn), solar_year[!, :Date]), :]
+solar_winter = solar_year[findall(row -> split(row, "-")[2] in Set(winter), solar_year[!, :Date]), :]
+solar_spring = solar_year[findall(row -> split(row, "-")[2] in Set(spring), solar_year[!, :Date]), :]
+
+# Vector with data of solar cf for South EU
+solar_year_south = vcat(solar_year[!, :PT], solar_year[!, :ES], solar_year[!, :IT])
+solar_summer_south = vcat(solar_summer[!, :PT], solar_summer[!, :ES], solar_summer[!, :IT])
+solar_autumn_south = vcat(solar_autumn[!, :PT], solar_autumn[!, :ES], solar_autumn[!, :IT])
+solar_winter_south = vcat(solar_winter[!, :PT], solar_winter[!, :ES], solar_winter[!, :IT])
+solar_spring_south = vcat(solar_spring[!, :PT], solar_spring[!, :ES], solar_spring[!, :IT])
+
+# Vector with data of solar cf for North EU
+solar_year_north = filter(!isnan, vcat(solar_year[!, :NO], solar_year[!, :SE], solar_year[!, :FI]))
+solar_summer_north = filter(!isnan, vcat(solar_summer[!, :NO], solar_summer[!, :SE], solar_summer[!, :FI]))
+solar_autumn_north = filter(!isnan, vcat(solar_autumn[!, :NO], solar_autumn[!, :SE], solar_autumn[!, :FI]))
+solar_winter_north = filter(!isnan, vcat(solar_winter[!, :NO], solar_winter[!, :SE], solar_winter[!, :FI]))
+solar_spring_north = filter(!isnan, vcat(solar_spring[!, :NO], solar_spring[!, :SE], solar_spring[!, :FI]))
+
+# Boxplot of solar cf for South EU
+boxplot_solar_south_annual_coper = boxplot(solar_year_south, xlabel="ANNUAL", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_solar_south_summer_coper = boxplot(solar_summer_south, xlabel="SUMMER", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_solar_south_autumn_coper = boxplot(solar_autumn_south, xlabel="AUTUMN", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_solar_south_winter_coper = boxplot(solar_winter_south, xlabel="WINTER", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_solar_south_spring_coper = boxplot(solar_spring_south, xlabel="SPRING", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+
+# Boxplot of solar cf for North EU
+boxplot_solar_north_annual_coper = boxplot(solar_year_north, xlabel="ANNUAL", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_solar_north_summer_coper = boxplot(solar_summer_north, xlabel="SUMMER", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_solar_north_autumn_coper = boxplot(solar_autumn_north, xlabel="AUTUMN", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_solar_north_winter_coper = boxplot(solar_winter_north, xlabel="WINTER", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_solar_north_spring_coper = boxplot(solar_spring_north, xlabel="SPRING", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+
+plot(boxplot_solar_south_annual_coper, boxplot_solar_south_summer_coper, boxplot_solar_south_autumn_coper, boxplot_solar_south_winter_coper, boxplot_solar_south_spring_coper, layout=(1,5))
+plot(boxplot_solar_north_annual_coper, boxplot_solar_north_summer_coper, boxplot_solar_north_autumn_coper, boxplot_solar_north_winter_coper, boxplot_solar_north_spring_coper, layout=(1,5))
+
+
 
 #############################################################################################################################################################
 ###############################                                      PLOT OF WIND                                             ###############################
@@ -191,6 +261,125 @@ plot_windon_curve(s, seasons[s])
 #savefig("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDON/IMAGES/$season Windon yield curve of year $year.png")
 
 
+#############################################################################################################################################################
+###############################                                      BOXPLOT WINDON COPERNICUS                                ###############################
+#############################################################################################################################################################
+using CSV, DataFrames, Plots, Statistics
+
+# Load data from csv file
+windon = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDON/WINDON_CL_CF_3H_RCP8_ALADIN_CNRM_1952_2100.csv", DataFrame)
+
+summer = ["06", "07", "08"]; autumn = ["09", "10", "11"]; winter = ["12", "01", "02"]; spring = ["03", "04", "05"]
+
+#############################################################################################################################################################
+# filter the dataframe to only include rows for the selected year(s) FOR WINDON
+rows1 = findall(row -> begin
+                      year = parse(Int, split(row, "-")[1])
+                      2071 <= year <= 2100
+                  end, windon[!, :Date])
+
+windon_year = windon[rows1, :]
+
+# Dataframe with all windon cf per country for specific years
+windon_summer = windon_year[findall(row -> split(row, "-")[2] in Set(summer), windon_year[!, :Date]), :]
+windon_autumn = windon_year[findall(row -> split(row, "-")[2] in Set(autumn), windon_year[!, :Date]), :]
+windon_winter = windon_year[findall(row -> split(row, "-")[2] in Set(winter), windon_year[!, :Date]), :]
+windon_spring = windon_year[findall(row -> split(row, "-")[2] in Set(spring), windon_year[!, :Date]), :]
+
+# Vector with data of windon cf for South EU
+windon_year_south = vcat(windon_year[!, :PT], windon_year[!, :ES], windon_year[!, :IT])
+windon_summer_south = vcat(windon_summer[!, :PT], windon_summer[!, :ES], windon_summer[!, :IT])
+windon_autumn_south = vcat(windon_autumn[!, :PT], windon_autumn[!, :ES], windon_autumn[!, :IT])
+windon_winter_south = vcat(windon_winter[!, :PT], windon_winter[!, :ES], windon_winter[!, :IT])
+windon_spring_south = vcat(windon_spring[!, :PT], windon_spring[!, :ES], windon_spring[!, :IT])
+
+# Vector with data of windon cf for North EU
+windon_year_north = filter(!isnan, vcat(windon_year[!, :NO], windon_year[!, :SE], windon_year[!, :FI]))
+windon_summer_north = filter(!isnan, vcat(windon_summer[!, :NO], windon_summer[!, :SE], windon_summer[!, :FI]))
+windon_autumn_north = filter(!isnan, vcat(windon_autumn[!, :NO], windon_autumn[!, :SE], windon_autumn[!, :FI]))
+windon_winter_north = filter(!isnan, vcat(windon_winter[!, :NO], windon_winter[!, :SE], windon_winter[!, :FI]))
+windon_spring_north = filter(!isnan, vcat(windon_spring[!, :NO], windon_spring[!, :SE], windon_spring[!, :FI]))
+
+# Boxplot of windon cf for South EU
+boxplot_windon_south_annual_coper = boxplot(windon_year_south, xlabel="ANNUAL", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windon_south_summer_coper = boxplot(windon_summer_south, xlabel="SUMMER", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windon_south_autumn_coper = boxplot(windon_autumn_south, xlabel="AUTUMN", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windon_south_winter_coper = boxplot(windon_winter_south, xlabel="WINTER", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windon_south_spring_coper = boxplot(windon_spring_south, xlabel="SPRING", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+
+# Boxplot of windon cf for North EU
+boxplot_windon_north_annual_coper = boxplot(windon_year_north, xlabel="ANNUAL", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windon_north_summer_coper = boxplot(windon_summer_north, xlabel="SUMMER", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windon_north_autumn_coper = boxplot(windon_autumn_north, xlabel="AUTUMN", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windon_north_winter_coper = boxplot(windon_winter_north, xlabel="WINTER", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windon_north_spring_coper = boxplot(windon_spring_north, xlabel="SPRING", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+
+plot(boxplot_windon_south_annual_coper, boxplot_windon_south_summer_coper, boxplot_windon_south_autumn_coper, boxplot_windon_south_winter_coper, boxplot_windon_south_spring_coper, layout=(1,5))
+plot(boxplot_windon_north_annual_coper, boxplot_windon_north_summer_coper, boxplot_windon_north_autumn_coper, boxplot_windon_north_winter_coper, boxplot_windon_north_spring_coper, layout=(1,5))
+
+
+
+
+
+#############################################################################################################################################################
+###############################                                      BOXPLOT WINDOFF COPERNICUS                                ###############################
+#############################################################################################################################################################
+using CSV, DataFrames, Plots, Statistics
+
+# Load data from csv file
+windoff = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDOFF/WINDOFF_MARITIME_CL_CF_3H_RCP8_ALADIN_CNRM_1952_2100.csv", DataFrame)
+
+summer = ["06", "07", "08"]; autumn = ["09", "10", "11"]; winter = ["12", "01", "02"]; spring = ["03", "04", "05"]
+
+#############################################################################################################################################################
+# filter the dataframe to only include rows for the selected year(s) FOR WINDOFF
+rows1 = findall(row -> begin
+                      year = parse(Int, split(row, "-")[1])
+                      2071 <= year <= 2100
+                  end, windoff[!, :Date])
+
+windoff_year = windoff[rows1, :]
+
+# Dataframe with all windoff cf per country for specific years
+windoff_summer = windoff_year[findall(row -> split(row, "-")[2] in Set(summer), windoff_year[!, :Date]), :]
+windoff_autumn = windoff_year[findall(row -> split(row, "-")[2] in Set(autumn), windoff_year[!, :Date]), :]
+windoff_winter = windoff_year[findall(row -> split(row, "-")[2] in Set(winter), windoff_year[!, :Date]), :]
+windoff_spring = windoff_year[findall(row -> split(row, "-")[2] in Set(spring), windoff_year[!, :Date]), :]
+
+# Vector with data of windoff cf for South EU
+windoff_year_south = vcat(windoff_year[!, :PT], windoff_year[!, :ES], windoff_year[!, :IT])
+windoff_summer_south = vcat(windoff_summer[!, :PT], windoff_summer[!, :ES], windoff_summer[!, :IT])
+windoff_autumn_south = vcat(windoff_autumn[!, :PT], windoff_autumn[!, :ES], windoff_autumn[!, :IT])
+windoff_winter_south = vcat(windoff_winter[!, :PT], windoff_winter[!, :ES], windoff_winter[!, :IT])
+windoff_spring_south = vcat(windoff_spring[!, :PT], windoff_spring[!, :ES], windoff_spring[!, :IT])
+
+# Vector with data of windoff cf for North EU
+windoff_year_north = filter(!isnan, vcat(windoff_year[!, :NO], windoff_year[!, :SE], windoff_year[!, :FI]))
+windoff_summer_north = filter(!isnan, vcat(windoff_summer[!, :NO], windoff_summer[!, :SE], windoff_summer[!, :FI]))
+windoff_autumn_north = filter(!isnan, vcat(windoff_autumn[!, :NO], windoff_autumn[!, :SE], windoff_autumn[!, :FI]))
+windoff_winter_north = filter(!isnan, vcat(windoff_winter[!, :NO], windoff_winter[!, :SE], windoff_winter[!, :FI]))
+windoff_spring_north = filter(!isnan, vcat(windoff_spring[!, :NO], windoff_spring[!, :SE], windoff_spring[!, :FI]))
+
+# Boxplot of windoff cf for South EU
+boxplot_windoff_south_annual_coper = boxplot(windoff_year_south, xlabel="ANNUAL", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"   # title="WINDOFF CF SOUTH EU PROJECTIONS"
+boxplot_windoff_south_summer_coper = boxplot(windoff_summer_south, xlabel="SUMMER", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windoff_south_autumn_coper = boxplot(windoff_autumn_south, xlabel="AUTUMN", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windoff_south_winter_coper = boxplot(windoff_winter_south, xlabel="WINTER", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windoff_south_spring_coper = boxplot(windoff_spring_south, xlabel="SPRING", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+
+# Boxplot of windoff cf for North EU
+boxplot_windoff_north_annual_coper = boxplot(windoff_year_north, xlabel="ANNUAL", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windoff_north_summer_coper = boxplot(windoff_summer_north, xlabel="SUMMER", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windoff_north_autumn_coper = boxplot(windoff_autumn_north, xlabel="AUTUMN", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windoff_north_winter_coper = boxplot(windoff_winter_north, xlabel="WINTER", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+boxplot_windoff_north_spring_coper = boxplot(windoff_spring_north, xlabel="SPRING", whisker_width=0.5, marker_size=3, color="red", label = "PROJ") # ylabel="Variable Value"
+
+plot(boxplot_windoff_south_annual_coper, boxplot_windoff_south_summer_coper, boxplot_windoff_south_autumn_coper, boxplot_windoff_south_winter_coper, boxplot_windoff_south_spring_coper, layout=(1,5))
+plot(boxplot_windoff_north_annual_coper, boxplot_windoff_north_summer_coper, boxplot_windoff_north_autumn_coper, boxplot_windoff_north_winter_coper, boxplot_windoff_north_spring_coper, layout=(1,5))
+
+
+
+plot(boxplot_windoff_south_annual_ref, boxplot_windoff_south_annual_coper, boxplot_windoff_south_summer_ref, boxplot_windoff_south_summer_coper, boxplot_windoff_south_autumn_ref, boxplot_windoff_south_autumn_coper, boxplot_windoff_south_spring_ref, boxplot_windoff_south_spring_coper, boxplot_windoff_south_winter_ref,boxplot_windoff_south_winter_coper, layout=(1,10), size=(1200,500))
 
 
 
@@ -259,6 +448,51 @@ plot!(1:size(subset2, 1), subset2.dem_MW, xlabel="days", ylabel="Demand (MWh)", 
 plot!(1:size(subset3, 1), subset3.dem_MW, xlabel="days", ylabel="Demand (MWh)", title= "Evolution of Demand of $count", label="2016",)
 
 #############################################################################################################################################################
+
+############################ DATA PARAMETERS ############################
+countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
+y = 2009.0    # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
+year = 2030
+representative_years = [1995.0, 2008.0, 2009.0]
+weights = [0.233, 0.367, 0.4]
+aggregate_3h = true
+
+countries_demand = countries_demand_entso       
+countries_solar = countries_solar_entso         # countries_solar_coper_cnrm
+countries_windon = countries_windon_entso       # countries_windon_coper_cnrm
+countries_windoff = countries_windoff_entso     # countries_windoff_coper_cnrm
+
+countries_dem = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "AT", "SE"]
+countries_dem2 = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "AT", "SE", "IT", "PT"]
+
+dem = reformat_entso_demand(demand_entso, countries_dem, countries_demand_entso, representative_years, weights, aggregate_3h)
+dem_PT_IT = reformat_demand_PT_IT(demand_PT_IT, aggregate_3h)
+dem_RP = hcat(dem, dem_PT_IT)
+
+dem_1982 = reformat_entso_demand(demand_entso, countries_dem2, countries_demand_entso, [1982.0, 1982.0], [0.5,0.5], aggregate_3h)
+
+plot(dem_1982, title="ENTSO demand 1982", label=names(dem_1982))
+
+X = :PT        # ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]
+plot(dem_1982[!, X], label="1982") 
+plot!(dem_RP[!, X], label="RP")
+
+sol_RP = reformat_entso_solar(solar_entso, countries, countries_solar_entso, representative_years, weights, aggregate_3h)
+sol_1982 = reformat_entso_solar(solar_entso, countries, countries_solar_entso, [1982.0], [1.0], aggregate_3h)
+
+won_RP = reformat_entso_windon(windon_entso, countries, countries_windon_entso, representative_years, weights, aggregate_3h) 
+won_1982 = reformat_entso_windon(windon_entso, countries, countries_windon_entso, [1982.0], [1.0], aggregate_3h) 
+
+woff_RP = reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, representative_years, weights, aggregate_3h)
+woff_1982 = reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, [1982.0], [1.0], aggregate_3h)
+
+
+X = :BE        # ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]
+plot(won_1982[!, X], label="1982") 
+plot!(won_RP[!, X], label="RP")
+
+
+#############################################################################################################################################################
 ###############################                                      PLOT OF SOLAR                                            ###############################
 #############################################################################################################################################################
 
@@ -269,7 +503,7 @@ using CSV, DataFrames, Plots, Statistics, Dates
 solar = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/SOLAR/PECD-2021.3-country-LFSolarPV-2025.csv", DataFrame)
 
 ##### PARAMETERS #####
-count = "Spain" # Name of Country
+count = "Spain" # Name of Country 
 season = "summer"
 y1 = 1982.0
 y2 = 2000.0
@@ -284,7 +518,7 @@ countries = Dict("Albania" => "AL","Austria" => "AT", "Bosnia and Herzegovina" =
 seasons = Dict("summer" => [6.0, 7.0, 8.0], "autumn" => [9.0, 10.0, 11.0], "winter" => [12.0, 1.0, 2.0], "spring" => [3.0, 4.0, 5.0])
 
 # filter the data for a specific country and select only the relevant columns
-solar= dropmissing(solar[solar.country .== countries[count], [:year, :month, :day, :hour, :cf]], disallowmissing=true)
+solar= dropmissing(solar[(solar.country .== countries[count]) , [:year, :month, :day, :hour, :cf]], disallowmissing=true)
 
 # Filter the DataFrame to keep only the summer days of year y
 df_subset1 = filter(row -> row.year == y1 && row.month in seasons[season], solar)
@@ -304,6 +538,63 @@ hourly_avg3 = combine(groupby(df_subset3, :hour), :cf => mean => :cf)
 plot(1:size(hourly_avg1, 1), hourly_avg1.cf, xlabel="hours", ylabel="Capacity Factor", title= "Evolution of Capacity Factor of $count for $season", label="1982",)
 plot!(1:size(hourly_avg2, 1), hourly_avg2.cf, xlabel="hours", ylabel="Capacity Factor", title= "Evolution of Capacity Factor of $count for $season", label="2000",)
 plot!(1:size(hourly_avg3, 1), hourly_avg3.cf, xlabel="hours", ylabel="Capacity Factor", title= "Evolution of Capacity Factor of $count for $season", label="2016",)
+
+
+#############################################################################################################################################################
+###############################                                      BOXPLOT SOLAR                                            ###############################
+#############################################################################################################################################################
+using CSV, DataFrames, Plots, Statistics, Dates
+
+
+# Read the CSV file into a DataFrame
+solar = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/SOLAR/PECD-2021.3-country-LFSolarPV-2025.csv", DataFrame)
+
+##### PARAMETERS #####
+count_south = ["Portugal", "Spain", "Italy"] 
+count_north = ["Norway", "Sweden", "Finland"] 
+season = "summer"
+
+
+countries = Dict("Albania" => "AL","Austria" => "AT", "Bosnia and Herzegovina" => "BA","Belgium" => "BE","Bulgaria" => "BG","Switzerland" => "CH","Cyprus" => "CY","Czech Republic" => "CZ","Germany" => "DE","Denmark" => "DK",
+                        "Estonia" => "EE","Spain" => "ES", "Finland" => "FI", "France" => "FR", "Greece" => "GR", "Croatia" => "HR", "Hungary" => "HU", "Ireland" => "IE", "Italy" => "IT", "Lithuania" => "LT",
+                        "Luxembourg" => "LU", "Latvia" => "LV", "Montenegro" => "ME", "North Macedonia" => "MK", "Malta" => "MT", "Netherlands" => "NL", "Norway" => "NO", "Poland" => "PL", "Portugal" => "PT",
+                        "Romania" => "RO","Serbia" => "RS", "Sweden" => "SE", "Slovenia" => "SI", "Slovakia" => "SK", "Turkey" => "TR", "Ukraine" => "UA", "United Kingdom" => "UK")
+
+seasons = Dict("summer" => [6.0, 7.0, 8.0], "autumn" => [9.0, 10.0, 11.0], "winter" => [12.0, 1.0, 2.0], "spring" => [3.0, 4.0, 5.0])
+
+# filter the data for a specific country and select only the relevant columns
+solar_south= dropmissing(solar[(solar.country .== countries[count_south[1]]) .| (solar.country .== countries[count_south[2]]) .| (solar.country .== countries[count_south[3]]) , [:year, :month, :day, :hour, :cf]], disallowmissing=true)
+solar_south_annual= dropmissing(solar_south[solar_south.year .>= 1986.0 .&& solar_south.year .<= 2015.0, [:month, :day, :hour, :cf]], disallowmissing=true)
+solar_south_summer= dropmissing(solar_south_annual[solar_south_annual.month .>= 6.0 .&& solar_south_annual.month .<= 8.0, [:day, :hour, :cf]], disallowmissing=true)
+solar_south_autumn= dropmissing(solar_south_annual[solar_south_annual.month .>= 9.0 .&& solar_south_annual.month .<= 11.0, [:day, :hour, :cf]], disallowmissing=true)
+solar_south_spring= dropmissing(solar_south_annual[solar_south_annual.month .>= 3.0 .&& solar_south_annual.month .<= 5.0, [:day, :hour, :cf]], disallowmissing=true)
+solar_south_winter= dropmissing(solar_south_annual[(solar_south_annual.month .== 12.0) .| (solar_south_annual.month .== 1.0) .| (solar_south_annual.month .== 2.0), [:day, :hour, :cf]], disallowmissing=true)
+
+boxplot_solar_south_annual_ref = boxplot(solar_south_annual[!,:cf], xlabel="ANNUAL", title="                   SOLAR CF SOUTH EU", whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"
+boxplot_solar_south_summer_ref = boxplot(solar_south_summer[!,:cf], xlabel="SUMMER",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="SOLAR CF SOUTH EU SUMMER",
+boxplot_solar_south_autumn_ref = boxplot(solar_south_autumn[!,:cf], xlabel="AUTUMN",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="SOLAR CF SOUTH EU AUTUMN",
+boxplot_solar_south_spring_ref = boxplot(solar_south_spring[!,:cf], xlabel="SPRING",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="SOLAR CF SOUTH EU SPRING",
+boxplot_solar_south_winter_ref = boxplot(solar_south_winter[!,:cf], xlabel="WINTER",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="SOLAR CF SOUTH EU WINTER",
+
+
+# filter the data for a specific country and select only the relevant columns
+solar_north= dropmissing(solar[(solar.country .== countries[count_north[1]]) .| (solar.country .== countries[count_north[2]]) .| (solar.country .== countries[count_north[3]]) , [:year, :month, :day, :hour, :cf]], disallowmissing=true)
+solar_north_annual= dropmissing(solar_north[solar_north.year .>= 1986.0 .&& solar_north.year .<= 2015.0, [:month, :day, :hour, :cf]], disallowmissing=true)
+solar_north_summer= dropmissing(solar_north_annual[solar_north_annual.month .>= 6.0 .&& solar_north_annual.month .<= 8.0, [:day, :hour, :cf]], disallowmissing=true)
+solar_north_autumn= dropmissing(solar_north_annual[solar_north_annual.month .>= 9.0 .&& solar_north_annual.month .<= 11.0, [:day, :hour, :cf]], disallowmissing=true)
+solar_north_spring= dropmissing(solar_north_annual[solar_north_annual.month .>= 3.0 .&& solar_north_annual.month .<= 5.0, [:day, :hour, :cf]], disallowmissing=true)
+solar_north_winter= dropmissing(solar_north_annual[(solar_north_annual.month .== 12.0) .| (solar_north_annual.month .== 1.0) .| (solar_north_annual.month .== 2.0), [:day, :hour, :cf]], disallowmissing=true)
+
+boxplot_solar_north_annual_ref = boxplot(solar_north_annual[!,:cf], xlabel="ANNUAL", title="                   SOLAR CF NORTH EU", whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"
+boxplot_solar_north_summer_ref = boxplot(solar_north_summer[!,:cf], xlabel="SUMMER",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="SOLAR CF NORTH EU SUMMER",
+boxplot_solar_north_autumn_ref = boxplot(solar_north_autumn[!,:cf], xlabel="AUTUMN",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="SOLAR CF NORTH EU AUTUMN",
+boxplot_solar_north_spring_ref = boxplot(solar_north_spring[!,:cf], xlabel="SPRING",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="SOLAR CF NORTH EU SPRING",
+boxplot_solar_north_winter_ref = boxplot(solar_north_winter[!,:cf], xlabel="WINTER",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="SOLAR CF NORTH EU WINTER",
+
+# Combine the box plots into a composite plot
+plot(boxplot_solar_south_annual_ref, boxplot_solar_south_summer_ref, boxplot_solar_south_autumn_ref, boxplot_solar_south_spring_ref, boxplot_solar_south_winter_ref, layout=(1,5))
+plot(boxplot_solar_north_annual_ref, boxplot_solar_north_summer_ref, boxplot_solar_north_autumn_ref, boxplot_solar_north_spring_ref, boxplot_solar_north_winter_ref, layout=(1,5))
+
 
 
 
@@ -375,6 +666,65 @@ plot(p1, p2, layout=(1,2), size=(1600,600))
 
 
 #############################################################################################################################################################
+###############################                                      BOXPLOT WINDON                                           ###############################
+#############################################################################################################################################################
+using CSV, DataFrames, Plots, Statistics, Dates
+
+
+# Read the CSV file into a DataFrame
+windon = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDON/PECD-2021.3-country-Onshore-2025.csv", DataFrame)
+
+##### PARAMETERS #####
+count = ["Portugal", "Spain", "Italy"] # Name of Country 
+count_north = ["Norway", "Sweden", "Finland"] 
+season = "summer"
+
+
+countries = Dict("Albania" => "AL","Austria" => "AT", "Bosnia and Herzegovina" => "BA","Belgium" => "BE","Bulgaria" => "BG","Switzerland" => "CH","Cyprus" => "CY","Czech Republic" => "CZ","Germany" => "DE","Denmark" => "DK",
+                        "Estonia" => "EE","Spain" => "ES", "Finland" => "FI", "France" => "FR", "Greece" => "GR", "Croatia" => "HR", "Hungary" => "HU", "Ireland" => "IE", "Italy" => "IT", "Lithuania" => "LT",
+                        "Luxembourg" => "LU", "Latvia" => "LV", "Montenegro" => "ME", "North Macedonia" => "MK", "Malta" => "MT", "Netherlands" => "NL", "Norway" => "NO", "Poland" => "PL", "Portugal" => "PT",
+                        "Romania" => "RO","Serbia" => "RS", "Sweden" => "SE", "Slovenia" => "SI", "Slovakia" => "SK", "Turkey" => "TR", "Ukraine" => "UA", "United Kingdom" => "UK")
+
+seasons = Dict("summer" => [6.0, 7.0, 8.0], "autumn" => [9.0, 10.0, 11.0], "winter" => [12.0, 1.0, 2.0], "spring" => [3.0, 4.0, 5.0])
+
+# filter the data for a specific country and select only the relevant columns
+windon_south= dropmissing(windon[(windon.country .== countries[count[1]]) .| (windon.country .== countries[count[2]]) .| (windon.country .== countries[count[3]]) , [:year, :month, :day, :hour, :cf]], disallowmissing=true)
+windon_south_annual= dropmissing(windon_south[windon_south.year .>= 1986.0 .&& windon_south.year .<= 2015.0, [:month, :day, :hour, :cf]], disallowmissing=true)
+windon_south_summer= dropmissing(windon_south_annual[windon_south_annual.month .>= 6.0 .&& windon_south_annual.month .<= 8.0, [:day, :hour, :cf]], disallowmissing=true)
+windon_south_autumn= dropmissing(windon_south_annual[windon_south_annual.month .>= 9.0 .&& windon_south_annual.month .<= 11.0, [:day, :hour, :cf]], disallowmissing=true)
+windon_south_spring= dropmissing(windon_south_annual[windon_south_annual.month .>= 3.0 .&& windon_south_annual.month .<= 5.0, [:day, :hour, :cf]], disallowmissing=true)
+windon_south_winter= dropmissing(windon_south_annual[(windon_south_annual.month .== 12.0) .| (windon_south_annual.month .== 1.0) .| (windon_south_annual.month .== 2.0), [:day, :hour, :cf]], disallowmissing=true)
+
+windon_south_annual[!,:cf]
+
+boxplot_windon_south_annual_ref = boxplot(windon_south_annual[!,:cf], xlabel="ANNUAL", title="                   WINDON CF SOUTH EU", whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"
+boxplot_windon_south_summer_ref = boxplot(windon_south_summer[!,:cf], xlabel="SUMMER",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDON CF SOUTH EU SUMMER",
+boxplot_windon_south_autumn_ref = boxplot(windon_south_autumn[!,:cf], xlabel="AUTUMN",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDON CF SOUTH EU AUTUMN",
+boxplot_windon_south_spring_ref = boxplot(windon_south_spring[!,:cf], xlabel="SPRING",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDON CF SOUTH EU SPRING",
+boxplot_windon_south_winter_ref = boxplot(windon_south_winter[!,:cf], xlabel="WINTER",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDON CF SOUTH EU WINTER",
+
+
+# filter the data for a specific country and select only the relevant columns
+windon_north= dropmissing(windon[(windon.country .== countries[count_north[1]]) .| (windon.country .== countries[count_north[2]]) .| (windon.country .== countries[count_north[3]]) , [:year, :month, :day, :hour, :cf]], disallowmissing=true)
+windon_north_annual= dropmissing(windon_north[windon_north.year .>= 1986.0 .&& windon_north.year .<= 2015.0, [:month, :day, :hour, :cf]], disallowmissing=true)
+windon_north_summer= dropmissing(windon_north_annual[windon_north_annual.month .>= 6.0 .&& windon_north_annual.month .<= 8.0, [:day, :hour, :cf]], disallowmissing=true)
+windon_north_autumn= dropmissing(windon_north_annual[windon_north_annual.month .>= 9.0 .&& windon_north_annual.month .<= 11.0, [:day, :hour, :cf]], disallowmissing=true)
+windon_north_spring= dropmissing(windon_north_annual[windon_north_annual.month .>= 3.0 .&& windon_north_annual.month .<= 5.0, [:day, :hour, :cf]], disallowmissing=true)
+windon_north_winter= dropmissing(windon_north_annual[(windon_north_annual.month .== 12.0) .| (windon_north_annual.month .== 1.0) .| (windon_north_annual.month .== 2.0), [:day, :hour, :cf]], disallowmissing=true)
+
+boxplot_windon_north_annual_ref = boxplot(windon_north_annual[!,:cf], xlabel="ANNUAL", title="                   WINDON CF NORTH EU", whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"
+boxplot_windon_north_summer_ref = boxplot(windon_north_summer[!,:cf], xlabel="SUMMER",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDON CF NORTH EU SUMMER",
+boxplot_windon_north_autumn_ref = boxplot(windon_north_autumn[!,:cf], xlabel="AUTUMN",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDON CF NORTH EU AUTUMN",
+boxplot_windon_north_spring_ref = boxplot(windon_north_spring[!,:cf], xlabel="SPRING",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDON CF NORTH EU SPRING",
+boxplot_windon_north_winter_ref = boxplot(windon_north_winter[!,:cf], xlabel="WINTER",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDON CF NORTH EU WINTER",
+
+# Combine the box plots into a composite plot
+plot(boxplot_windon_south_annual_ref, boxplot_windon_south_summer_ref, boxplot_windon_south_autumn_ref, boxplot_windon_south_spring_ref, boxplot_windon_south_winter_ref, layout=(1,5))
+plot(boxplot_windon_north_annual_ref, boxplot_windon_north_summer_ref, boxplot_windon_north_autumn_ref, boxplot_windon_north_spring_ref, boxplot_windon_north_winter_ref, layout=(1,5))
+
+
+
+#############################################################################################################################################################
 ###############################                                      PLOT OF WINDOFF                                          ###############################
 #############################################################################################################################################################
 
@@ -436,3 +786,86 @@ plot!(1:size(df_subset2, 1), df_subset2.cf, xlabel="$season months", ylabel="Cap
 plot!(1:size(df_subset3, 1), df_subset3.cf, xlabel="$season months", ylabel="Capacity Factor", title= "Seasonal Evolution of Windoff Capacity Factor of $count for $season", label=y3,)
 
 plot(p1, p2, layout=(1,2), size=(1600,600))
+
+
+#############################################################################################################################################################
+###############################                                      BOXPLOT WINDOFF                                          ###############################
+#############################################################################################################################################################
+using CSV, DataFrames, Plots, Statistics, Dates
+
+
+# Read the CSV file into a DataFrame
+windoff = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDOFF/PECD-2021.3-country-Offshore-2025.csv", DataFrame)
+
+##### PARAMETERS #####
+count = ["Portugal", "Spain", "Italy"] # Name of Country 
+count_north = ["Norway", "Sweden", "Finland"] 
+season = "summer"
+
+
+countries = Dict("Albania" => "AL","Austria" => "AT", "Bosnia and Herzegovina" => "BA","Belgium" => "BE","Bulgaria" => "BG","Switzerland" => "CH","Cyprus" => "CY","Czech Republic" => "CZ","Germany" => "DE","Denmark" => "DK",
+                        "Estonia" => "EE","Spain" => "ES", "Finland" => "FI", "France" => "FR", "Greece" => "GR", "Croatia" => "HR", "Hungary" => "HU", "Ireland" => "IE", "Italy" => "IT", "Lithuania" => "LT",
+                        "Luxembourg" => "LU", "Latvia" => "LV", "Montenegro" => "ME", "North Macedonia" => "MK", "Malta" => "MT", "Netherlands" => "NL", "Norway" => "NO", "Poland" => "PL", "Portugal" => "PT",
+                        "Romania" => "RO","Serbia" => "RS", "Sweden" => "SE", "Slovenia" => "SI", "Slovakia" => "SK", "Turkey" => "TR", "Ukraine" => "UA", "United Kingdom" => "UK")
+
+seasons = Dict("summer" => [6.0, 7.0, 8.0], "autumn" => [9.0, 10.0, 11.0], "winter" => [12.0, 1.0, 2.0], "spring" => [3.0, 4.0, 5.0])
+
+# filter the data for a specific country and select only the relevant columns
+windoff_south= dropmissing(windoff[(windoff.country .== countries[count[1]]) .| (windoff.country .== countries[count[2]]) .| (windoff.country .== countries[count[3]]) , [:year, :month, :day, :hour, :cf]], disallowmissing=true)
+windoff_south_annual= dropmissing(windoff_south[windoff_south.year .>= 1986.0 .&& windoff_south.year .<= 2015.0, [:month, :day, :hour, :cf]], disallowmissing=true)
+windoff_south_summer= dropmissing(windoff_south_annual[windoff_south_annual.month .>= 6.0 .&& windoff_south_annual.month .<= 8.0, [:day, :hour, :cf]], disallowmissing=true)
+windoff_south_autumn= dropmissing(windoff_south_annual[windoff_south_annual.month .>= 9.0 .&& windoff_south_annual.month .<= 11.0, [:day, :hour, :cf]], disallowmissing=true)
+windoff_south_spring= dropmissing(windoff_south_annual[windoff_south_annual.month .>= 3.0 .&& windoff_south_annual.month .<= 5.0, [:day, :hour, :cf]], disallowmissing=true)
+windoff_south_winter= dropmissing(windoff_south_annual[(windoff_south_annual.month .== 12.0) .| (windoff_south_annual.month .== 1.0) .| (windoff_south_annual.month .== 2.0), [:day, :hour, :cf]], disallowmissing=true)
+
+boxplot_windoff_south_annual_ref = boxplot(windoff_south_annual[!,:cf], xlabel="ANNUAL", title="                   WINDOFF CF SOUTH EU", whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"
+boxplot_windoff_south_summer_ref = boxplot(windoff_south_summer[!,:cf], xlabel="SUMMER",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDOFF CF SOUTH EU SUMMER",
+boxplot_windoff_south_autumn_ref = boxplot(windoff_south_autumn[!,:cf], xlabel="AUTUMN",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDOFF CF SOUTH EU AUTUMN",
+boxplot_windoff_south_spring_ref = boxplot(windoff_south_spring[!,:cf], xlabel="SPRING",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDOFF CF SOUTH EU SPRING",
+boxplot_windoff_south_winter_ref = boxplot(windoff_south_winter[!,:cf], xlabel="WINTER",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDOFF CF SOUTH EU WINTER",
+
+
+# filter the data for a specific country and select only the relevant columns
+windoff_north= dropmissing(windoff[(windoff.country .== countries[count_north[1]]) .| (windoff.country .== countries[count_north[2]]) .| (windoff.country .== countries[count_north[3]]) , [:year, :month, :day, :hour, :cf]], disallowmissing=true)
+windoff_north_annual= dropmissing(windoff_north[windoff_north.year .>= 1986.0 .&& windoff_north.year .<= 2015.0, [:month, :day, :hour, :cf]], disallowmissing=true)
+windoff_north_summer= dropmissing(windoff_north_annual[windoff_north_annual.month .>= 6.0 .&& windoff_north_annual.month .<= 8.0, [:day, :hour, :cf]], disallowmissing=true)
+windoff_north_autumn= dropmissing(windoff_north_annual[windoff_north_annual.month .>= 9.0 .&& windoff_north_annual.month .<= 11.0, [:day, :hour, :cf]], disallowmissing=true)
+windoff_north_spring= dropmissing(windoff_north_annual[windoff_north_annual.month .>= 3.0 .&& windoff_north_annual.month .<= 5.0, [:day, :hour, :cf]], disallowmissing=true)
+windoff_north_winter= dropmissing(windoff_north_annual[(windoff_north_annual.month .== 12.0) .| (windoff_north_annual.month .== 1.0) .| (windoff_north_annual.month .== 2.0), [:day, :hour, :cf]], disallowmissing=true)
+
+boxplot_windoff_north_annual_ref = boxplot(windoff_north_annual[!,:cf], xlabel="ANNUAL", title="                   WINDOFF CF NORTH EU", whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"
+boxplot_windoff_north_summer_ref = boxplot(windoff_north_summer[!,:cf], xlabel="SUMMER",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDOFF CF NORTH EU SUMMER",
+boxplot_windoff_north_autumn_ref = boxplot(windoff_north_autumn[!,:cf], xlabel="AUTUMN",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDOFF CF NORTH EU AUTUMN",
+boxplot_windoff_north_spring_ref = boxplot(windoff_north_spring[!,:cf], xlabel="SPRING",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"    title="WINDOFF CF NORTH EU SPRING",
+boxplot_windoff_north_winter_ref = boxplot(windoff_north_winter[!,:cf], xlabel="WINTER",  whisker_width=0.5, marker_size=3, label = "REF") # ylabel="Variable Value"   
+
+# Combine the box plots into a composite plot
+plot(boxplot_windoff_south_annual_ref, boxplot_windoff_south_summer_ref, boxplot_windoff_south_autumn_ref, boxplot_windoff_south_spring_ref, boxplot_windoff_south_winter_ref, layout=(1,5))
+plot(boxplot_windoff_north_annual_ref, boxplot_windoff_north_summer_ref, boxplot_windoff_north_autumn_ref, boxplot_windoff_north_spring_ref, boxplot_windoff_north_winter_ref, layout=(1,5))
+
+
+
+#################################################################################################################################################################################################
+#####################################                                                           FINAL BOXPLOTS                                              ##################################### 
+#################################################################################################################################################################################################
+
+### SOUTH EU ###
+# Solar
+plot(boxplot_solar_south_annual_ref, boxplot_solar_south_annual_coper, boxplot_solar_south_summer_ref, boxplot_solar_south_summer_coper, boxplot_solar_south_autumn_ref, boxplot_solar_south_autumn_coper, boxplot_solar_south_spring_ref, boxplot_solar_south_spring_coper, boxplot_solar_south_winter_ref,boxplot_solar_south_winter_coper, layout=(1,10), size=(1200,500))
+
+# Windon
+plot(boxplot_windon_south_annual_ref, boxplot_windon_south_annual_coper, boxplot_windon_south_summer_ref, boxplot_windon_south_summer_coper, boxplot_windon_south_autumn_ref, boxplot_windon_south_autumn_coper, boxplot_windon_south_spring_ref, boxplot_windon_south_spring_coper, boxplot_windon_south_winter_ref,boxplot_windon_south_winter_coper, layout=(1,10), size=(1200,500))
+
+# Windoff
+plot(boxplot_windoff_south_annual_ref, boxplot_windoff_south_annual_coper, boxplot_windoff_south_summer_ref, boxplot_windoff_south_summer_coper, boxplot_windoff_south_autumn_ref, boxplot_windoff_south_autumn_coper, boxplot_windoff_south_spring_ref, boxplot_windoff_south_spring_coper, boxplot_windoff_south_winter_ref,boxplot_windoff_south_winter_coper, layout=(1,10), size=(1200,500))
+
+
+### NORTH EU ###
+# Solar
+plot(boxplot_solar_north_annual_ref, boxplot_solar_north_annual_coper, boxplot_solar_north_summer_ref, boxplot_solar_north_summer_coper, boxplot_solar_north_autumn_ref, boxplot_solar_north_autumn_coper, boxplot_solar_north_spring_ref, boxplot_solar_north_spring_coper, boxplot_solar_north_winter_ref,boxplot_solar_north_winter_coper, layout=(1,10), size=(1200,500))
+
+# Windon
+plot(boxplot_windon_north_annual_ref, boxplot_windon_north_annual_coper, boxplot_windon_north_summer_ref, boxplot_windon_north_summer_coper, boxplot_windon_north_autumn_ref, boxplot_windon_north_autumn_coper, boxplot_windon_north_spring_ref, boxplot_windon_north_spring_coper, boxplot_windon_north_winter_ref,boxplot_windon_north_winter_coper, layout=(1,10), size=(1200,500))
+
+# Windoff
+plot(boxplot_windoff_north_annual_ref, boxplot_windoff_north_annual_coper, boxplot_windoff_north_summer_ref, boxplot_windoff_north_summer_coper, boxplot_windoff_north_autumn_ref, boxplot_windoff_north_autumn_coper, boxplot_windoff_north_spring_ref, boxplot_windoff_north_spring_coper, boxplot_windoff_north_winter_ref,boxplot_windoff_north_winter_coper, layout=(1,10), size=(1200,500))
