@@ -30,22 +30,20 @@ using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyCha
 
 # Read the CSV file into a DataFrame
 demand_entso = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/DEMAND/PECD-country-demand_national_estimates-2030.csv", DataFrame)
+demand_PT_IT = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/Demand Data/new2_PT_IT.csv", delim=';',header=true, DataFrame)
 solar_entso = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/SOLAR/PECD-2021.3-country-LFSolarPV-2030.csv", DataFrame)
 windon_entso = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDON/PECD-2021.3-country-Onshore-2030.csv", DataFrame)
 windoff_entso = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/WINDOFF/PECD-2021.3-country-Offshore-2030.csv", DataFrame)
+
+new_demand_PT_IT = transform(demand_PT_IT, :PT => ByRow(x -> parse(Float64, replace(x, "," => "."))) => :PT,
+                                  :IT => ByRow(x -> parse(Float64, replace(x, "," => "."))) => :IT)
+
 
 # Available data for following countries in data demand, solar, windon, windoff
 countries_demand_entso = unique(demand_entso.country) # ["AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK", "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "TR", "UA", "UK"]
 countries_solar_entso= unique(solar_entso.country)    # ["AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK", "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "TR", "UA", "UK"]
 countries_windon_entso = unique(windon_entso.country) # MT is in solar & demand but not in windon => # ["AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "ME", "MK", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "TR", "UA", "UK"]
 countries_windoff_entso= unique(windoff_entso.country) # ["BE", "DE", "DK", "FI", "FR", "IE", "IT", "NL", "PT", "SE", "UK"]
-
-
-
-
-PT_IT = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/Demand Data/PT_IT.csv", DataFrame)
-
-
 
 
 # Functions to reformat ENTSO DATA
@@ -89,10 +87,31 @@ function reformat_entso_demand(data::DataFrame, countries::Vector{String}, count
             rename!(data2, :dem_MW => c)
             push!(dem_values, data2[!, c] * weight)
         end
-        sum_of_vectors = reduce((x, y) -> x .+ y, [dem_values[1], dem_values[2], dem_values[3]])
+        sum_vectors(x, y) = x .+ y
+        sum_of_vectors = reduce(sum_vectors, dem_values)
         sov = DataFrame(c => sum_of_vectors)
         d = isempty(d) ? hcat(sov) : hcat(d, sov)
     end
+    if aggregate_3h
+        nrows_new = Int(ceil(size(d, 1)/3))
+        dem_3h = DataFrame()
+        for col in names(d)
+            col_data = []
+            for i in 1:nrows_new
+                row_start = (i-1)*3 + 1
+                row_end = min(i*3, size(d, 1))
+                push!(col_data, mean(d[row_start:row_end, col]))
+            end
+            dem_3h[!, col] = col_data
+        end
+        return dem_3h
+    else
+        return d   
+    end
+end
+
+function reformat_demand_PT_IT(data::DataFrame, aggregate_3h::Bool)
+    d = data
     if aggregate_3h
         nrows_new = Int(ceil(size(d, 1)/3))
         dem_3h = DataFrame()
@@ -150,7 +169,8 @@ function reformat_entso_solar(data::DataFrame, countries::Vector{String}, countr
             rename!(data2, :cf => c)
             push!(cf_values, data2[!, c] * weight)
         end
-        sum_of_vectors = reduce((x, y) -> x .+ y, [cf_values[1], cf_values[2], cf_values[3]])
+        sum_vectors(x, y) = x .+ y
+        sum_of_vectors = reduce(sum_vectors, cf_values)
         sov = DataFrame(c => sum_of_vectors)
         d = isempty(d) ? hcat(sov) : hcat(d, sov)
     end
@@ -215,7 +235,8 @@ function reformat_entso_windon(data::DataFrame, countries::Vector{String}, count
             rename!(data2, :cf => c)
             push!(cf_values, data2[!, c] * weight)
         end
-        sum_of_vectors = reduce((x, y) -> x .+ y, [cf_values[1], cf_values[2], cf_values[3]])
+        sum_vectors(x, y) = x .+ y
+        sum_of_vectors = reduce(sum_vectors, cf_values)
         sov = DataFrame(c => sum_of_vectors)
         d = isempty(d) ? hcat(sov) : hcat(d, sov)
     end
@@ -275,7 +296,8 @@ function reformat_entso_windoff(data::DataFrame, countries::Vector{String}, coun
             rename!(data2, :cf => c)
             push!(cf_values, data2[!, c] * weight)
         end
-        sum_of_vectors = reduce((x, y) -> x .+ y, [cf_values[1], cf_values[2], cf_values[3]])
+        sum_vectors(x, y) = x .+ y
+        sum_of_vectors = reduce(sum_vectors, cf_values)
         sov = DataFrame(c => sum_of_vectors)
         d = isempty(d) ? hcat(sov) : hcat(d, sov)
     end
@@ -299,9 +321,9 @@ end
 
 
 # Parameter for function to reformat data
-countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
-y = 1982.0    # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
-aggregate_3h = true
+#countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
+#y = 1982.0    # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
+#aggregate_3h = true
 
 #= 
 # Call reformated ENTSO DATA
@@ -379,15 +401,31 @@ end
 
 
 # Parameter for function to reformat data
-year = 2030    # 1952-2100
-countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]     #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
+#year = 2030    # 1952-2100
+#countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]     #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
 
-
+#= 
 # Call reformated COPERNICUS DATA
 reformat_coper_solar(solar_coper_cnrm, countries, countries_solar_coper_cnrm, year)
 reformat_coper_windon(windon_coper_cnrm, countries, countries_windon_coper_cnrm, year)
 reformat_coper_windoff(windoff_coper_cnrm, countries, countries_windoff_coper_cnrm, year)
-
+ =#
 
 #############################################################################################################################################################
 #############################################################################################################################################################
+
+
+using CSV, FileIO
+
+# Read the CSV file
+df = CSV.File("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/Demand Data/PT_IT.csv") |> DataFrame
+
+# Replace commas with dots
+for col in names(df)
+    if eltype(df[!, col]) == String
+        df[!, col] = replace.(df[!, col], "," => ".")
+    end
+end
+
+# Write the modified DataFrame back to a CSV file
+CSV.write("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/Demand Data/new4_PT_IT.csv", df)

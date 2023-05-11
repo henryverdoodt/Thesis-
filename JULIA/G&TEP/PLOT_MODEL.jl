@@ -51,9 +51,9 @@ function matrix_generators_data(gen_dict::Dict{String, Dict{String, Float64}})
     return data
 end
 
-Generator_colors = Dict("Biomass" => :green, "WindOffshore" => :blue, "CCGT_new" => :orange, "WindOnshore" => :lightblue, "Nuclear" => :purple, "Solar" => :gold, "OCGT" => :red, "ICE" => :gray)
-Generator_colors = [:green, :lightblue, :orange, :blue, :purple, :gold, :red, :gray]    # [:green, :blue, :lightblue, :gold]  
-Generator_labels = ["Biomass" "WindOnshore" "CCGT_new" "WindOffshore" "Nuclear" "Solar" "OCGT" "ICE"]   # ["Biomass" "WindOffshore" "WindOnshore" "Solar"]  
+#Generator_colors = Dict("Biomass" => :green, "WindOffshore" => :blue, "CCGT_new" => :orange, "WindOnshore" => :lightblue, "Nuclear" => :purple, "Solar" => :gold, "OCGT" => :red, "ICE" => :gray)
+Generator_colors = [:green, :blue, :orange, :lightblue, :purple, :gold, :red, :gray]    # [:green, :blue, :lightblue, :gold]  
+Generator_labels = ["Biomass" "WindOffshore" "CCGT_new" "WindOnshore" "Nuclear" "Solar" "OCGT" "ICE"]   # ["Biomass" "WindOffshore" "WindOnshore" "Solar"]  
 
 function plot_generator_capacities(data_matrix::Matrix{Float64}, nodes::Vector{String}, Generator_colors::Vector{Symbol}, Generator_labels::Matrix{String})
     # Plot generation stacked bar chart

@@ -32,32 +32,39 @@ include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/PLOT_MODEL.jl")
 ############################ DATA PARAMETERS ############################
 countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
 y = 2009.0    # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
-year = 2030
+year = 2100
 representative_years = [1995.0, 2008.0, 2009.0]
 weights = [0.233, 0.367, 0.4]
-aggregate_3h = false
+aggregate_3h = true
 
 countries_demand = countries_demand_entso       
-countries_solar = countries_solar_entso         # countries_solar_coper_cnrm
-countries_windon = countries_windon_entso       # countries_windon_coper_cnrm
-countries_windoff = countries_windoff_entso     # countries_windoff_coper_cnrm
+countries_solar = countries_solar_coper_cnrm         # countries_solar_coper_cnrm        # countries_solar_entso 
+countries_windon = countries_windon_coper_cnrm       # countries_windon_coper_cnrm       # countries_windon_entso 
+countries_windoff = countries_windoff_coper_cnrm     # countries_windoff_coper_cnrm      # countries_windoff_entso
 
 countries_dem = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "AT", "SE"]
 
 # Read the CSV file into a DataFrame
+
+## REF CASE DEMAND
 dem = reformat_entso_demand(demand_entso, countries_dem, countries_demand_entso, representative_years, weights, aggregate_3h)
-PT_IT = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/ENTSO/Demand Data/PT_IT.csv", DataFrame)
+dem_PT_IT = reformat_demand_PT_IT(new_demand_PT_IT, aggregate_3h)
+dem = hcat(dem, dem_PT_IT)
 
-dem = hcat(dem, PT_IT)
-
+#= 
+## REF CASE CF
 sol = reformat_entso_solar(solar_entso, countries, countries_solar_entso, representative_years, weights, aggregate_3h)
 won = reformat_entso_windon(windon_entso, countries, countries_windon_entso, representative_years, weights, aggregate_3h) 
 woff = reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, representative_years, weights, aggregate_3h)
+  =#
 
-#sol = reformat_entso_solar(solar_entso, countries, countries_solar_entso, y, aggregate_3h)          #reformat_coper_solar(solar_coper_cnrm, countries, countries_solar_coper_cnrm, year)           # reformat_entso_solar(solar_entso, countries, countries_solar_entso, y, aggregate_3h)
-#won = reformat_entso_windon(windon_entso, countries, countries_windon_entso, y, aggregate_3h)       #reformat_coper_windon(windon_coper_cnrm, countries, countries_windon_coper_cnrm, year)        # reformat_entso_windon(windon_entso, countries, countries_windon_entso, y, aggregate_3h)
-#woff = reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, y, aggregate_3h)    #reformat_coper_windoff(windoff_coper_cnrm, countries, countries_windoff_coper_cnrm, year)     # reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, y, aggregate_3h)
+# PROJECTIONS CF
+sol = reformat_coper_solar(solar_coper_cnrm, countries, countries_solar_coper_cnrm, year)          # reformat_coper_solar(solar_coper_cnrm, countries, countries_solar_coper_cnrm, year)           # reformat_entso_solar(solar_entso, countries, countries_solar_entso, y, aggregate_3h)
+won = reformat_coper_windon(windon_coper_cnrm, countries, countries_windon_coper_cnrm, year)       # reformat_coper_windon(windon_coper_cnrm, countries, countries_windon_coper_cnrm, year)        # reformat_entso_windon(windon_entso, countries, countries_windon_entso, y, aggregate_3h)
+woff = reformat_coper_windoff(windoff_coper_cnrm, countries, countries_windoff_coper_cnrm, year)    #reformat_coper_windoff(windoff_coper_cnrm, countries, countries_windoff_coper_cnrm, year)     # reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, y, aggregate_3h)
 
+
+# DATA GENERATION AND TRANSMISSION
 data = YAML.load_file(joinpath(@__DIR__, "overview_data.yaml"))
 network = YAML.load_file(joinpath(@__DIR__, "network_west_europe.yaml"))
 
@@ -219,7 +226,7 @@ function build_model!(m::Model)
     Bl = m.ext[:parameters][:Bl]
     
         ### parameters of generators per unit
-    #VC = m.ext[:parameters][:VC]
+    VC = m.ext[:parameters][:VC]
     IC = m.ext[:parameters][:IC]
     AF = m.ext[:parameters][:AF]
 
@@ -262,8 +269,8 @@ function build_model!(m::Model)
     #con_θref = m.ext[:constraints][:con_θref] = @constraint(m, [j=J], θ[j,"BE"] == 0.0) # Voltage angle at ref node
     con_DGl = m.ext[:constraints][:con_DGl] = @constraint(m, [i=ID, j=J, n=N], g[i,j,n] <= AF[i]*cap[i,n]) # Dispatchable generation limit
     con_SGl = m.ext[:constraints][:con_SGl] = @constraint(m, [i=["Solar"], j=J, n=N], g[i,j,n] <= AFS[Symbol(n)][j]*AF[i]*cap[i,n]) # Solar generation limit
-    con_WONGl = m.ext[:constraints][:con_WONGl] = @constraint(m, [i=["WindOnshore"], j=J, n=N], g[i,j,n] <= AFWON[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
-    con_WOFFGl = m.ext[:constraints][:con_WOFFGl] = @constraint(m, [i=["WindOffshore"], j=J, n=intersect(countries, countries_windoff)], g[i,j,n] <= AFWOFF[Symbol(n)][j]*AF[i]*cap[i,n]) # Wind generation limit
+    con_WONGl = m.ext[:constraints][:con_WONGl] = @constraint(m, [i=["WindOnshore"], j=J, n=N], g[i,j,n] <= AFWON[Symbol(n)][j]*AF[i]*cap[i,n]) # Windon generation limit
+    con_WOFFGl = m.ext[:constraints][:con_WOFFGl] = @constraint(m, [i=["WindOffshore"], j=J, n=intersect(countries, countries_windoff)], g[i,j,n] <= AFWOFF[Symbol(n)][j]*AF[i]*cap[i,n]) # Windoff generation limit
     con_CWO_WOFF = m.ext[:constraints][:con_CWO_WOFF] = @constraint(m, [i=["WindOffshore"], j=J, n=setdiff(countries, countries_windoff)], g[i,j,n] == 0.0) # No wind offshore in these countries
 
     con_alphaCO2 = m.ext[:constraints][:con_alphaCO2] = @constraint(m, [i=I_CO2, j=J, n=N], g[i,j,n] == 0.0 )
