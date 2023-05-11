@@ -419,3 +419,19 @@ PowerSector:
   NG: "NO" # participate in the natural gas market
 
 
+Storage:
+ OCGT_H:
+  fuelCosts: 80 # MEUR/TWh - to be linked to price of natural gas - used P_2023
+  efficiency: 0.4 # NG -> electricity  
+  gMAX: 50 # MW
+  OC: 1 #453 # MEUR/GW
+  Lifetime: 25 # years
+  AF: 0.85 # -
+
+ PtH:
+  fuelCosts: 160 # MEUR/TWh - to be linked to price of electricity (ASSUMPTION twice the price of gas as the GT (eff=50%) determine the elec price)
+  efficiency: 0.66 # efficiency conversion electricity to hydrogen  
+  gMAX: 50 # MW  TO BE VERIFIED
+  OC: 1 #650 # MEUR/GW (electrolysis)
+  Lifetime: 15 # years  (electrolysis)
+  AF: 1 # -  own calculation
