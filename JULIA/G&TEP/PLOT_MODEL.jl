@@ -34,6 +34,20 @@ function get_generators_capacity_storage(m::Model, I::Vector{String}, N::Vector{
     return gen_dict
 end
 
+function get_generators_capacity_storage_relative(m::Model, I::Vector{String}, N::Vector{String}, S::Vector{String})
+    gen_dict = Dict{String, Dict{String, Float64}}()  
+    for node in N
+        total_cap = sum(value.(m.ext[:variables][:cap][unit, node]) for unit in I) + value.(m.ext[:variables][:cap_PtH][node]) + value.(m.ext[:variables][:cap_OCGT][node])
+        gen_dict[node] = Dict((gen => 0.0 for gen in cat(I, S, dims=1))...)
+        for unit in I
+            gen_dict[node][unit] = (value.(m.ext[:variables][:cap][unit, node]) / total_cap) * 100000
+        end
+        gen_dict[node]["PtH"] = (value.(m.ext[:variables][:cap_PtH][node]) / total_cap) * 100000
+        gen_dict[node]["OCGT_H"] = (value.(m.ext[:variables][:cap_OCGT][node]) / total_cap) * 100000
+    end
+    return gen_dict
+end
+
 # Create a dictionaries to store the AC transmission capacity
 function get_ac_transmission_capacity(m::Model, L_ac::Vector{Vector{String}})
     trans_ac_dict = Dict(la => value.(m.ext[:variables][:varlac][la]) for la in L_ac)
@@ -71,7 +85,7 @@ Generator_labels = ["Biomass" "WindOffshore" "CCGT_new" "WindOnshore" "Nuclear" 
 Generator_colors_storage = [:green, :blue, :orange, :magenta, :lightblue, :purple, :gold, :red, :gray, :cyan]    # [:green, :blue, :lightblue, :gold]  
 Generator_labels_storage = ["Biomass" "WindOffshore" "CCGT_new" "OCGT_H" "WindOnshore" "Nuclear" "Solar" "OCGT" "ICE" "PtH"]   # ["Biomass" "WindOffshore" "WindOnshore" "Solar"] 
 
-function plot_generator_capacities(data_matrix::Matrix{Float64}, nodes::Vector{String}, Generator_colors::Vector{Symbol}, Generator_labels::Matrix{String})
+function plot_generator_capacities(data_matrix::Matrix{Float64}, nodes::Vector{String}, Generator_colors::Vector{Symbol}, Generator_labels::Matrix{String}, title::String)
     # Plot generation stacked bar chart
     groupedbar(data_matrix,
         bar_position = :stack,
@@ -81,20 +95,8 @@ function plot_generator_capacities(data_matrix::Matrix{Float64}, nodes::Vector{S
         xticks=(1:length(nodes), nodes),
         label= Generator_labels,
         color_palette= Generator_colors,
-        title="Installed Generation Capacity (GW)")
-end
-
-function plot_generator_capacities_storage(data_matrix::Matrix{Float64}, nodes::Vector{String}, Generator_colors::Vector{Symbol}, Generator_labels::Matrix{String})
-    # Plot generation stacked bar chart
-    groupedbar(data_matrix,
-        bar_position = :stack,
-        bar_width=0.5,
-        bar_edges=true,
-        ylabel= "Capacity (MW)",
-        xticks=(1:length(nodes), nodes),
-        label= Generator_labels_storage,
-        color_palette= Generator_colors_storage,
-        title="Installed Generation & Storage Capacity (GW)")
+        title= title,
+        legend= :outertopright)
 end
 
 

@@ -166,7 +166,7 @@ function process_parameters!(m::Model, data::Dict, network::Dict)
     OCS = m.ext[:parameters][:OCS] = Dict(i => 10^3*dS[SubString(i,1:length(i))]["OC"] for i in S) # EUR/MW, Overnight investment cost of a unit
     LifeTS = m.ext[:parameters][:LifeTS] = Dict(i => dS[SubString(i,1:length(i))]["Lifetime"] for i in S) # years, Lifetime of Asset
     ICS = m.ext[:parameters][:ICS] = Dict(i => 10^3*(dS[SubString(i,1:length(i))]["OC"]*disc_r)/(1-(1/(1+disc_r)^(dS[SubString(i,1:length(i))]["Lifetime"]))) for i in S) # EUR/MWy, Investment Cost in generation unit i
-    AFSt = m.ext[:parameters][:AFSt] = Dict(i => dS[SubString(i,1:length(i))]["AF"] for i in S) # Availability facor of a generator
+    AFSt = m.ext[:parameters][:AFSt] = Dict(i => dS[SubString(i,1:length(i))]["AF"] for i in S) # Availability facor of Storage technology
 
     #FC = m.ext[:parameters][:FC] = Dict(i => ((d[SubString(i,1:length(i))]["fuelCosts"])/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # EUR/MWh, Fuelcost Cost of unit i
     #CO2 = m.ext[:parameters][:CO2] = Dict(i => ((d[SubString(i,1:length(i))]["emissions"])/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # ton/MWh, Variable Cost of unit i
@@ -302,8 +302,14 @@ function build_model!(m::Model)
     con_alphaCO2 = m.ext[:constraints][:con_alphaCO2] = @constraint(m, [i=I_CO2, j=J, n=N], g[i,j,n] == 0.0 )
 
     con_PtH = m.ext[:constraints][:con_PtH] = @constraint(m, [j=J, n=N], g_PtH[j,n] <= AFSt["PtH"]*cap_PtH[n]) # PtH generation limit
-    con_OCGT = m.ext[:constraints][:con_OCGT] = @constraint(m, [j=J, n=N], g_OCGT[j,n] <= AFSt["OCGT_H"]*cap_OCGT[n]) # PtH generation limit
-    con_SB = m.ext[:constraints][:con_SB] = @constraint(m, [j=J, n=N], sum(g_PtH[j,n]) == sum(g_OCGT[j,n])) # PtH generation limit
+    con_OCGT = m.ext[:constraints][:con_OCGT] = @constraint(m, [j=J, n=N], g_OCGT[j,n] <= AFSt["OCGT_H"]*cap_OCGT[n]) # OCGT generation limit
+    #con_SB = m.ext[:constraints][:con_SB] = @constraint(m, [j=1:365, n=N], sum(g_PtH[8*(j-1)+i,n] for i in 1:8) == sum(g_OCGT[8*(j-1)+i,n] for i in 1:8)) # Daily Storage Balance in each country
+    #con_SB = m.ext[:constraints][:con_SB] = @constraint(m, [j=1:365], sum(g_PtH[8*(j-1)+i,n] for i in 1:8, n in N) == sum(g_OCGT[8*(j-1)+i,n] for i in 1:8, n in N)) # Daily Storage Balance over whole EU 
+    #con_SB = m.ext[:constraints][:con_SB] = @constraint(m, [n=N], sum(g_PtH[j,n] for j in 1:timestep(aggregate_3h)) == sum(g_OCGT[j,n] for j in 1:timestep(aggregate_3h))) # Yearly Storage Balance in each country
+    con_SB = m.ext[:constraints][:con_SB] = @constraint(m, sum(g_PtH[j,n] for j in 1:timestep(aggregate_3h), n in N) == sum(g_OCGT[j,n] for j in 1:timestep(aggregate_3h), n in N)) # Yearly Storage Balance over whole EU 
+    
+
+
 
 end
 
@@ -331,18 +337,18 @@ L_ac = m.ext[:sets][:AC_Lines]
 L_dc = m.ext[:sets][:DC_Lines]
 S = m.ext[:sets][:S]
 
-gen_dict = get_generators_capacity_storage(m, I, N, S)
-data_matrix = matrix_generators_data(gen_dict)
+gen_dict_abs = get_generators_capacity_storage(m, I, N, S)
+gen_dict_rel = get_generators_capacity_storage_relative(m, I, N, S)
+data_matrix_abs = matrix_generators_data(gen_dict_abs)
+data_matrix_rel = matrix_generators_data(gen_dict_rel)
 nodes = collect(keys(gen_dict))
-generation = plot_generator_capacities_storage(data_matrix, nodes, Generator_colors_storage, Generator_labels_storage)
+generation_abs = plot_generator_capacities(data_matrix_abs, nodes, Generator_colors_storage, Generator_labels_storage, "Installed Generation & Storage Capacity (GW)")
+generation_rel = plot_generator_capacities(data_matrix_rel, nodes, Generator_colors_storage, Generator_labels_storage, "Installed Generation & Storage Capacity (%)")
 
 trans_ac_dict = get_ac_transmission_capacity(m, L_ac)
 trans_dc_dict = get_dc_transmission_capacity(m, L_dc)
 transmission_map_full = plot_transmission_network(trans_ac_dict, trans_dc_dict, countries_coord)
 transmission_map = plot_transmission_needed(trans_ac_dict, trans_dc_dict, countries_coord)
 
-plot(generation, transmission_map, layout=(1,2), size=(1200,500))
-
-
-
+plot(generation_abs, transmission_map, layout=(1,2), size=(1200,500))
 
