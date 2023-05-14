@@ -83,7 +83,7 @@ function loop_csv_boxplot_CF_Coper(CF_CM::Vector{DataFrame}, CF_CM_name::Vector{
 end
 
 #csv_boxplot_CF_Coper(solar_CNRM, "solar_CNRM", 2071, 2100, summer, "summer", false, North_EU, "South_EU")
-loop_csv_boxplot_CF_Coper(CF_CM, CF_CM_name, seasons, seasons_name, region, region_name)
+loop_csv_boxplot_CF_Coper(CF_HadGEM, CF_HadGEM_name, seasons, seasons_name, region, region_name)
 
 
 

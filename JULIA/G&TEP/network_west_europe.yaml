@@ -28,97 +28,97 @@ AC_Lines:
  AC_1:
   Connection: ["ES", "FR"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW   # (Schlott et al.) paper use 16 450 EUR/km.MW # 31280 EUR/km.MW comes from my assumptions (mean value of a lot of existing AC lines cost)
+  Price: 2000 #16450 #31280 # EUR/km.MW   # (Schlott et al.) paper use 16 450 EUR/km.MW # 2000 EUR/km.MW (previous value: 31280 EUR/km.MW) comes from my assumptions (mean value of a lot of existing AC lines cost)
   Capacity: 6000 # MW
 
  AC_2:
   Connection: ["FR", "DE"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
  AC_3:
   Connection: ["FR", "BE"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
  AC_4:
   Connection: ["BE", "NL"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
  AC_5:
   Connection: ["BE", "DE"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
  AC_6:
   Connection: ["NL", "DE"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
  AC_7:
   Connection: ["DK", "DE"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
  AC_8:
   Connection: ["PT", "ES"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW   # (Schlott et al.) paper use 16 450 EUR/km.MW # 31280 EUR/km.MW comes from my assumptions (mean value of a lot of existing AC lines cost)
+  Price: 2000 #16450 #31280 # EUR/km.MW 
   Capacity: 6000 # MW
 
  AC_9:
   Connection: ["IT", "FR"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
  AC_10:
   Connection: ["IT", "CH"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
  AC_11:
   Connection: ["IT", "AT"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
  AC_12:
   Connection: ["CH", "FR"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
  AC_13:
   Connection: ["CH", "AT"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
  AC_14:
   Connection: ["CH", "DE"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
  AC_15:
   Connection: ["AT", "DE"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
  AC_16:
   Connection: ["SE", "NO"]
   Length: 50 # km
-  Price: 16450 #31280 # EUR/km.MW
+  Price: 2000 #16450 #31280 # EUR/km.MW
   Capacity: 6000 # MW
 
 
@@ -127,65 +127,65 @@ DC_Lines:
  DC_1:
   Connection: ["UK", "FR"]    # Chilling - Tourbe              # source length assumption of HVDC lines: https://en.wikipedia.org/wiki/List_of_HVDC_projects
   Length: 204 # km
-  Price: 16450 #41150 # EUR/km.MW
+  Price: 2000 #16450 #41150 # EUR/km.MW                       # 2000 EUR/km.MW (previous value: 41150 EUR/km.MW) comes from my assumptions (mean value of a lot of existing DC lines cost)
   Capacity: 6000 # MW
 
  DC_2:
   Connection: ["UK", "BE"]    # Richborough Energy Park - Bruges
   Length: 140 # km
-  Price: 16450 #41150 # EUR/km.MW
+  Price: 2000 #16450 #41150 # EUR/km.MW
   Capacity: 6000 # MW
 
  DC_3:
   Connection: ["UK", "NO"]    # Blyth - Kvilldal
   Length: 730 # km
-  Price: 16450 #41150 # EUR/km.MW
+  Price: 2000 #16450 #41150 # EUR/km.MW
   Capacity: 6000 # MW
 
  DC_4:
   Connection: ["NO", "BE"]    # Feda - Bruges --> ASSUMPTION (do not exist)
   Length: 820 # km
-  Price: 16450 #41150 # EUR/km.MW
+  Price: 2000 #16450 #41150 # EUR/km.MW
   Capacity: 6000 # MW
 
  DC_5:
   Connection: ["NO", "NL"]    # Feda - Eemshaven
   Length: 580 # km
-  Price: 16450 #41150 # EUR/km.MW
+  Price: 2000 #16450 #41150 # EUR/km.MW
   Capacity: 6000 # MW
 
  DC_6:
   Connection: ["NO", "DK"]    # Kristiansand - Tjele
   Length: 230 # km
-  Price: 16450 #41150 # EUR/km.MW
+  Price: 2000 #16450 #41150 # EUR/km.MW
   Capacity: 6000 # MW
 
  DC_7:
   Connection: ["DK", "NL"]    # Endrup - Eemshaven
   Length: 325 # km
-  Price: 16450 #41150 # EUR/km.MW
+  Price: 2000 #16450 #41150 # EUR/km.MW
   Capacity: 6000 # MW
 
  DC_8:
   Connection: ["UK", "IE"]    # Shotton (Wales) - Woodland
   Length: 130 # km
-  Price: 16450 #41150 # EUR/km.MW
+  Price: 2000 #16450 #41150 # EUR/km.MW
   Capacity: 6000 # MW
 
  DC_9:
   Connection: ["SE", "DK"]    # Lindome - Vester
   Length: 147 # km
-  Price: 16450 #41150 # EUR/km.MW
+  Price: 2000 #16450 #41150 # EUR/km.MW
   Capacity: 6000 # MW
 
  DC_10:
   Connection: ["SE", "FI"]    # Dannebo - Rauma
   Length: 233 # km
-  Price: 16450 #41150 # EUR/km.MW
+  Price: 2000 #16450 #41150 # EUR/km.MW
   Capacity: 6000 # MW
 
  DC_11:
   Connection: ["SE", "DE"]    # Kruseberg - Lübeck-Herrenwyk
   Length: 262 # km
-  Price: 16450 #41150 # EUR/km.MW
+  Price: 2000 #16450 #41150 # EUR/km.MW
   Capacity: 6000 # MW
