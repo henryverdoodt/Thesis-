@@ -32,15 +32,15 @@ include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/PLOT_MODEL.jl")
 ############################ DATA PARAMETERS ############################
 countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
 y = 2009.0    # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
-year = 2100
+year = 2099
 representative_years = [1995.0, 2008.0, 2009.0]
 weights = [0.233, 0.367, 0.4]
 aggregate_3h = true
 
 countries_demand = countries_demand_entso       
-countries_solar = countries_solar_coper_cnrm         # countries_solar_coper_cnrm        # countries_solar_entso 
-countries_windon = countries_windon_coper_cnrm       # countries_windon_coper_cnrm       # countries_windon_entso 
-countries_windoff = countries_windoff_coper_cnrm     # countries_windoff_coper_cnrm      # countries_windoff_entso
+countries_solar = countries_solar_coper_CNRM         # countries_solar_coper_cnrm        # countries_solar_entso 
+countries_windon = countries_windon_coper_CNRM       # countries_windon_coper_cnrm       # countries_windon_entso 
+countries_windoff = countries_windoff_coper_CNRM     # countries_windoff_coper_cnrm      # countries_windoff_entso
 
 countries_dem = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "AT", "SE"]
 
@@ -51,17 +51,17 @@ dem = reformat_entso_demand(demand_entso, countries_dem, countries_demand_entso,
 dem_PT_IT = reformat_demand_PT_IT(new_demand_PT_IT, aggregate_3h)
 dem = hcat(dem, dem_PT_IT)
 
-#= 
+#=
 ## REF CASE CF
 sol = reformat_entso_solar(solar_entso, countries, countries_solar_entso, representative_years, weights, aggregate_3h)
 won = reformat_entso_windon(windon_entso, countries, countries_windon_entso, representative_years, weights, aggregate_3h) 
 woff = reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, representative_years, weights, aggregate_3h)
-  =#
+=#
 
 # PROJECTIONS CF
-sol = reformat_coper_solar(solar_coper_cnrm, countries, countries_solar_coper_cnrm, year)          # reformat_coper_solar(solar_coper_cnrm, countries, countries_solar_coper_cnrm, year)           # reformat_entso_solar(solar_entso, countries, countries_solar_entso, y, aggregate_3h)
-won = reformat_coper_windon(windon_coper_cnrm, countries, countries_windon_coper_cnrm, year)       # reformat_coper_windon(windon_coper_cnrm, countries, countries_windon_coper_cnrm, year)        # reformat_entso_windon(windon_entso, countries, countries_windon_entso, y, aggregate_3h)
-woff = reformat_coper_windoff(windoff_coper_cnrm, countries, countries_windoff_coper_cnrm, year)    #reformat_coper_windoff(windoff_coper_cnrm, countries, countries_windoff_coper_cnrm, year)     # reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, y, aggregate_3h)
+sol = reformat_coper_solar(solar_coper_CNRM, countries, countries_solar_coper_CNRM, year)          # reformat_coper_solar(solar_coper_cnrm, countries, countries_solar_coper_cnrm, year)           # reformat_entso_solar(solar_entso, countries, countries_solar_entso, y, aggregate_3h)
+won = reformat_coper_windon(windon_coper_CNRM, countries, countries_windon_coper_CNRM, year)       # reformat_coper_windon(windon_coper_cnrm, countries, countries_windon_coper_cnrm, year)        # reformat_entso_windon(windon_entso, countries, countries_windon_entso, y, aggregate_3h)
+woff = reformat_coper_windoff(windoff_coper_CNRM, countries, countries_windoff_coper_CNRM, year)    #reformat_coper_windoff(windoff_coper_cnrm, countries, countries_windoff_coper_cnrm, year)     # reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, y, aggregate_3h)
 
 
 # DATA GENERATION AND TRANSMISSION
@@ -305,8 +305,8 @@ function build_model!(m::Model)
     con_OCGT = m.ext[:constraints][:con_OCGT] = @constraint(m, [j=J, n=N], g_OCGT[j,n] <= AFSt["OCGT_H"]*cap_OCGT[n]) # OCGT generation limit
     #con_SB = m.ext[:constraints][:con_SB] = @constraint(m, [j=1:365, n=N], sum(g_PtH[8*(j-1)+i,n] for i in 1:8) == sum(g_OCGT[8*(j-1)+i,n] for i in 1:8)) # Daily Storage Balance in each country
     #con_SB = m.ext[:constraints][:con_SB] = @constraint(m, [j=1:365], sum(g_PtH[8*(j-1)+i,n] for i in 1:8, n in N) == sum(g_OCGT[8*(j-1)+i,n] for i in 1:8, n in N)) # Daily Storage Balance over whole EU 
-    #con_SB = m.ext[:constraints][:con_SB] = @constraint(m, [n=N], sum(g_PtH[j,n] for j in 1:timestep(aggregate_3h)) == sum(g_OCGT[j,n] for j in 1:timestep(aggregate_3h))) # Yearly Storage Balance in each country
-    con_SB = m.ext[:constraints][:con_SB] = @constraint(m, sum(g_PtH[j,n] for j in 1:timestep(aggregate_3h), n in N) == sum(g_OCGT[j,n] for j in 1:timestep(aggregate_3h), n in N)) # Yearly Storage Balance over whole EU 
+    con_SB = m.ext[:constraints][:con_SB] = @constraint(m, [n=N], sum(g_PtH[j,n] for j in 1:timestep(aggregate_3h)) == sum(g_OCGT[j,n] for j in 1:timestep(aggregate_3h))) # Yearly Storage Balance in each country
+    #con_SB = m.ext[:constraints][:con_SB] = @constraint(m, sum(g_PtH[j,n] for j in 1:timestep(aggregate_3h), n in N) == sum(g_OCGT[j,n] for j in 1:timestep(aggregate_3h), n in N)) # Yearly Storage Balance over whole EU 
     
 
 
@@ -337,16 +337,19 @@ L_ac = m.ext[:sets][:AC_Lines]
 L_dc = m.ext[:sets][:DC_Lines]
 S = m.ext[:sets][:S]
 
+
+gen_dict_abs_year = get_generators_capacity_storage_years(m, I, N, S, year)
 gen_dict_abs = get_generators_capacity_storage(m, I, N, S)
 gen_dict_rel = get_generators_capacity_storage_relative(m, I, N, S)
 data_matrix_abs = matrix_generators_data(gen_dict_abs)
 data_matrix_rel = matrix_generators_data(gen_dict_rel)
-nodes = collect(keys(gen_dict))
+nodes = collect(keys(gen_dict_abs))
 generation_abs = plot_generator_capacities(data_matrix_abs, nodes, Generator_colors_storage, Generator_labels_storage, "Installed Generation & Storage Capacity (GW)")
 generation_rel = plot_generator_capacities(data_matrix_rel, nodes, Generator_colors_storage, Generator_labels_storage, "Installed Generation & Storage Capacity (%)")
 
 trans_ac_dict = get_ac_transmission_capacity(m, L_ac)
 trans_dc_dict = get_dc_transmission_capacity(m, L_dc)
+trans_dict = merge(get_ac_transmission_capacity(m, L_ac), get_dc_transmission_capacity(m, L_dc))
 transmission_map_full = plot_transmission_network(trans_ac_dict, trans_dc_dict, countries_coord)
 transmission_map = plot_transmission_needed(trans_ac_dict, trans_dc_dict, countries_coord)
 

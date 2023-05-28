@@ -34,6 +34,19 @@ function get_generators_capacity_storage(m::Model, I::Vector{String}, N::Vector{
     return gen_dict
 end
 
+function get_generators_capacity_storage_years(m::Model, I::Vector{String}, N::Vector{String}, S::Vector{String}, year::Int64)
+    gen_dict = Dict{String, Dict{String, Dict{Int64, Float64}}}()  
+    for node in N
+        gen_dict[node] = Dict((gen => Dict{Int64, Float64}() for gen in cat(I, S, dims=1))...)
+        for unit in I
+            gen_dict[node][unit][year] = value.(m.ext[:variables][:cap][unit, node])
+        end
+        gen_dict[node]["PtH"][year] = value.(m.ext[:variables][:cap_PtH][node])
+        gen_dict[node]["OCGT_H"][year] = value.(m.ext[:variables][:cap_OCGT][node])
+    end
+    return gen_dict
+end
+
 function get_generators_capacity_storage_relative(m::Model, I::Vector{String}, N::Vector{String}, S::Vector{String})
     gen_dict = Dict{String, Dict{String, Float64}}()  
     for node in N

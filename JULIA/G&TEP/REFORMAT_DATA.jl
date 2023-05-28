@@ -343,14 +343,30 @@ reformat_entso_windoff(windoff_entso, countries, countries_windoff_entso, y, agg
 using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyChaos, InteractiveUtils, StatsPlots, Images, Dates
 
 # Read the CSV file into a DataFrame
-solar_coper_cnrm = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/SOLAR/SOLAR_CL_CF_3H_RCP8_ALADIN_CNRM_1952_2100.csv", DataFrame)
-windon_coper_cnrm = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDON/WINDON_CL_CF_3H_RCP8_ALADIN_CNRM_1952_2100.csv", DataFrame)
-windoff_coper_cnrm = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDOFF/WINDOFF_MARITIME_CL_CF_3H_RCP8_ALADIN_CNRM_1952_2100.csv", DataFrame)
+solar_coper_CNRM = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/SOLAR/SOLAR_CL_CF_3H_RCP8_ALADIN_CNRM_1952_2100.csv", DataFrame)
+windon_coper_CNRM = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDON/WINDON_CL_CF_3H_RCP8_ALADIN_CNRM_1952_2100.csv", DataFrame)
+windoff_coper_CNRM = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDOFF/WINDOFF_MARITIME_CL_CF_3H_RCP8_ALADIN_CNRM_1952_2100.csv", DataFrame)
+
+solar_coper_EARTH = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/SOLAR/SOLAR_CL_CF_3H_RCP8_HIRHAM_EARTH_1951_2100.csv", DataFrame)
+windon_coper_EARTH = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDON/WINDON_CL_CF_3H_RCP8_HIRHAM_EARTH_1951_2100.csv", DataFrame)
+windoff_coper_EARTH = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDOFF/WINDOFF_MARITIME_CL_CF_3H_RCP8_HIRHAM_EARTH_1951_2100.csv", DataFrame)
+
+solar_coper_HadGEM = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/SOLAR/SOLAR_CL_CF_3H_RCP8_RegCM_HadGEM_1971_2099.csv", DataFrame)
+windon_coper_HadGEM = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDON/WINDON_CL_CF_3H_RCP8_RegCM_HadGEM_1971_2099.csv", DataFrame)
+windoff_coper_HadGEM = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDOFF/WINDOFF_MARITIME_CL_CF_3H_RCP8_RegCM_HadGEM_1971_2099.csv", DataFrame)
 
 # Available data for following countries in solar, windon, windoff
-countries_solar_coper_cnrm = setdiff(names(solar_coper_cnrm), ["Date"])
-countries_windon_coper_cnrm = setdiff(names(windon_coper_cnrm), ["Date"])
-countries_windoff_coper_cnrm = setdiff(names(windoff_coper_cnrm), ["Date"])
+countries_solar_coper_CNRM = setdiff(names(solar_coper_CNRM), ["Date"])
+countries_windon_coper_CNRM = setdiff(names(windon_coper_CNRM), ["Date"])
+countries_windoff_coper_CNRM = setdiff(names(windoff_coper_CNRM), ["Date"])
+
+countries_solar_coper_EARTH = setdiff(names(solar_coper_EARTH), ["Date"])
+countries_windon_coper_EARTH = setdiff(names(windon_coper_EARTH), ["Date"])
+countries_windoff_coper_EARTH = setdiff(names(windoff_coper_EARTH), ["Date"])
+
+countries_solar_coper_HadGEM = setdiff(names(solar_coper_HadGEM), ["Date"])
+countries_windon_coper_HadGEM = setdiff(names(windon_coper_HadGEM), ["Date"])
+countries_windoff_coper_HadGEM = setdiff(names(windoff_coper_HadGEM), ["Date"])
 
 # Functions to reformat COPERNICUS DATA
 function reformat_coper_solar(solar::DataFrame, countries::Vector{String} , countries_solar::Vector{String}, year::Int64)

@@ -19,9 +19,9 @@ solar_EARTH = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/SOLA
 windon_EARTH = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDON/WINDON_CL_CF_3H_RCP8_HIRHAM_EARTH_1951_2100.csv", DataFrame)
 windoff_EARTH = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDOFF/WINDOFF_MARITIME_CL_CF_3H_RCP8_HIRHAM_EARTH_1951_2100.csv", DataFrame)
 
-solar_HadGEM = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/SOLAR/SOLAR_CL_CF_3H_RCP8_RegCM_HadGEM_1971_2100.csv", DataFrame)
-windon_HadGEM = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDON/WINDON_CL_CF_3H_RCP8_RegCM_HadGEM_1971_2100.csv", DataFrame)
-windoff_HadGEM = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDOFF/WINDOFF_MARITIME_CL_CF_3H_RCP8_RegCM_HadGEM_1971_2100.csv", DataFrame)
+solar_HadGEM = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/SOLAR/SOLAR_CL_CF_3H_RCP8_RegCM_HadGEM_1971_2099.csv", DataFrame)
+windon_HadGEM = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDON/WINDON_CL_CF_3H_RCP8_RegCM_HadGEM_1971_2099.csv", DataFrame)
+windoff_HadGEM = CSV.read("/Users/henryverdoodt/Documents/CODE/DATA/COPERNICUS/WINDOFF/WINDOFF_MARITIME_CL_CF_3H_RCP8_RegCM_HadGEM_1971_2099.csv", DataFrame)
 
 CF_CNRM = [solar_CNRM, windon_CNRM, windoff_CNRM]
 CF_CNRM_name = ["solar_CNRM", "windon_CNRM", "windoff_CNRM"]
@@ -49,7 +49,20 @@ function csv_boxplot_CF_Coper(data::DataFrame, data_name::String, BeginYear::Int
     rows1 = findall(row -> (BeginYear <= parse(Int, split(row, "-")[1]) <= EndYear), data[!, :Date])  
     data_year = data[rows1, :]
     if Yearly
-        data_year_region = filter(!isnan, vcat(data_year[!, Symbol(region[1])], data_year[!, Symbol(region[2])], data_year[!, Symbol(region[3])]))
+        matrix = hcat(data_year[!, Symbol(region[1])], data_year[!, Symbol(region[2])], data_year[!, Symbol(region[3])])
+        rows, cols = size(matrix)
+        mean_values = zeros(rows)
+        for i in 1:rows
+            row = matrix[i, :]
+            if all(isnan.(row))
+                mean_values[i] = 0.0
+            else
+                valid_values = filter(x -> !isnan(x), row)
+                mean_values[i] = mean(valid_values)
+            end
+        end
+        data_year_region = mean_values
+        #data_year_region = filter(!isnan, vcat(data_year[!, Symbol(region[1])], data_year[!, Symbol(region[2])], data_year[!, Symbol(region[3])]))
         output_file = "/Users/henryverdoodt/Documents/CODE/DATA/BOXPLOT/$(data_name)_$(BeginYear)_$(EndYear)_year_$(region_name).csv"
         CSV.write(output_file, DataFrame(data=data_year_region))  
         #return data_year_region
@@ -61,6 +74,9 @@ function csv_boxplot_CF_Coper(data::DataFrame, data_name::String, BeginYear::Int
         #return data_season_region
     end
 end
+
+
+
 
 function loop_csv_boxplot_CF_Coper(CF_CM::Vector{DataFrame}, CF_CM_name::Vector{String},seasons::Vector{Vector{String}}, seasons_name::Vector{String}, region::Vector{Vector{String}}, region_name::Vector{String})
     count_cf = 0
@@ -75,15 +91,15 @@ function loop_csv_boxplot_CF_Coper(CF_CM::Vector{DataFrame}, CF_CM_name::Vector{
             for s in seasons
                 count_s +=1
                 #println(seasons_name[count_s])
-                csv_boxplot_CF_Coper(cf, CF_CM_name[count_cf], 2071, 2100, s, seasons_name[count_s], false, r, region_name[count_r])
+                #csv_boxplot_CF_Coper(cf, CF_CM_name[count_cf], 1979, 2005, s, seasons_name[count_s], false, r, region_name[count_r])
             end
-            csv_boxplot_CF_Coper(cf, CF_CM_name[count_cf], 2071, 2100, summer, "summer", true, r, region_name[count_r])
+            csv_boxplot_CF_Coper(cf, CF_CM_name[count_cf], 1979, 2099, summer, "summer", true, r, region_name[count_r])
         end
     end
 end
 
 #csv_boxplot_CF_Coper(solar_CNRM, "solar_CNRM", 2071, 2100, summer, "summer", false, North_EU, "South_EU")
-loop_csv_boxplot_CF_Coper(CF_HadGEM, CF_HadGEM_name, seasons, seasons_name, region, region_name)
+loop_csv_boxplot_CF_Coper(CF_EARTH, CF_EARTH_name, seasons, seasons_name, region, region_name)
 
 
 
