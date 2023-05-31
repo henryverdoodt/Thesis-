@@ -70,8 +70,6 @@ print("the changes in CF is equal to for windoff summer value in South EU:", cha
  
 
 
-
-'''
 # Set colors for the boxes
 colors = ['lightblue', 'lightsalmon', 'lightcoral', 'rosybrown']; 
 for box, color in zip(bp_summer['boxes'], colors):
@@ -107,7 +105,7 @@ plt.title('Windoff CF for South Europe');
 
 # Show the plot
 plt.show()
-'''
+
 
 
 

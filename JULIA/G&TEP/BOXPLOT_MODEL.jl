@@ -14,7 +14,7 @@ using StatsPlots, Images
 include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/REFORMAT_DATA.jl")
 include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/PLOT_MODEL.jl")
 
-gen_dict = Dict{String, Dict{String, Dict{Int64, Float64}}}()  
+gen_dict = Dict{String, Dict{String, Dict{Int64, Float64}}}()  # Country => Unit => (year1: capacity, year2: capacity, ...)
 for node in N
     gen_dict[node] = Dict((gen => Dict{Int64, Float64}() for gen in cat(I, S, dims=1))...)
 end

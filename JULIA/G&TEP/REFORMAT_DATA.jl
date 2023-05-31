@@ -384,6 +384,21 @@ function reformat_coper_solar(solar::DataFrame, countries::Vector{String} , coun
     return sol2
 end
 
+function reformat_coper_solar_multiple_years(solar::DataFrame, countries::Vector{String}, countries_solar::Vector{String}, start_year::Int64, end_year::Int64)
+    df_countries = select(solar, [:Date, Symbol.(intersect(countries, countries_solar))]...)
+    df_years = df_countries[findall(x -> start_year <= parse(Int, split(x, "-")[1]) <= end_year, df_countries.Date), :]
+    sol = dropmissing(select(df_years, Not(:Date)), disallowmissing=true)
+
+    replace_nan(v) = map(x -> isnan(x) ? zero(x) : x, v)
+    df2 = map(replace_nan, eachcol(sol))
+
+    sol2 = DataFrame()
+    for (i, col) in enumerate(names(sol))
+        sol2[!, col] = df2[i]
+    end
+    return sol2
+end
+
 
 function reformat_coper_windon(windon::DataFrame, countries::Vector{String} , countries_windon::Vector{String}, year::Int64)
     df_countries = select(windon, [:Date, Symbol.(intersect(countries, countries_windon))]...)
@@ -400,6 +415,22 @@ function reformat_coper_windon(windon::DataFrame, countries::Vector{String} , co
     return won2
 end
 
+function reformat_coper_windon_multiple_years(windon::DataFrame, countries::Vector{String}, countries_windon::Vector{String}, start_year::Int64, end_year::Int64)
+    df_countries = select(windon, [:Date, Symbol.(intersect(countries, countries_windon))]...)
+    df_years = df_countries[findall(x -> start_year <= parse(Int, split(x, "-")[1]) <= end_year, df_countries.Date), :]
+    won = dropmissing(select(df_years, Not(:Date)), disallowmissing=true)
+
+    replace_nan(v) = map(x -> isnan(x) ? zero(x) : x, v)
+    df2 = map(replace_nan, eachcol(won))
+
+    won2 = DataFrame()
+    for (i, col) in enumerate(names(won))
+        won2[!, col] = df2[i]
+    end
+    return won2
+end
+
+
 function reformat_coper_windoff(windoff::DataFrame, countries::Vector{String} , countries_windoff::Vector{String}, year::Int64)
     df_countries = select(windoff, [:Date, Symbol.(intersect(countries, countries_windoff))]...)
     df_year = df_countries[findall(x -> year == parse(Int, split(x, "-")[1]), df_countries.Date), :]
@@ -414,6 +445,164 @@ function reformat_coper_windoff(windoff::DataFrame, countries::Vector{String} , 
     end
     return woff2
 end
+
+function reformat_coper_windoff_multiple_years(windoff::DataFrame, countries::Vector{String}, countries_windoff::Vector{String}, start_year::Int64, end_year::Int64)
+    df_countries = select(windoff, [:Date, Symbol.(intersect(countries, countries_windoff))]...)
+    df_years = df_countries[findall(x -> start_year <= parse(Int, split(x, "-")[1]) <= end_year, df_countries.Date), :]
+    woff = dropmissing(select(df_years, Not(:Date)), disallowmissing=true)
+
+    replace_nan(v) = map(x -> isnan(x) ? zero(x) : x, v)
+    df2 = map(replace_nan, eachcol(woff))
+
+    woff2 = DataFrame()
+    for (i, col) in enumerate(names(woff))
+        woff2[!, col] = df2[i]
+    end
+    return woff2
+end
+
+
+using DataFrames
+using StatsPlots
+using Statistics
+using DataStructures
+
+countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"] 
+wind_df1 = reformat_coper_windon_multiple_years(windon_coper_CNRM, countries, countries_windon_coper_CNRM, 1986, 2015)
+solar_df1 = reformat_coper_solar_multiple_years(solar_coper_CNRM, countries, countries_solar_coper_CNRM, 1986, 2015)
+wind_df2 = reformat_coper_windon_multiple_years(windon_coper_CNRM, countries, countries_windon_coper_CNRM, 2070, 2099)
+solar_df2 = reformat_coper_solar_multiple_years(solar_coper_CNRM, countries, countries_solar_coper_CNRM, 2070, 2099)
+wind_df3 = reformat_coper_windon_multiple_years(windon_coper_EARTH, countries, countries_windon_coper_EARTH, 2070, 2099)
+solar_df3 = reformat_coper_solar_multiple_years(solar_coper_EARTH, countries, countries_solar_coper_EARTH, 2070, 2099)
+wind_df4 = reformat_coper_windon_multiple_years(windon_coper_HadGEM, countries, countries_windon_coper_HadGEM, 2070, 2099)
+solar_df4 = reformat_coper_solar_multiple_years(solar_coper_HadGEM, countries, countries_solar_coper_HadGEM, 2070, 2099)
+
+North = [:NO, :SE, :FI]
+South = [:PT, :ES, :IT]
+
+function countmap(data)
+    counts = Dict{eltype(data), Int}()
+    for value in data
+        counts[value] = get(counts, value, 0) + 1
+    end
+    return counts
+end
+
+function analyze_and_plot_dunkelflaute(solar_df1::DataFrame, wind_df1::DataFrame, solar_df2::DataFrame, wind_df2::DataFrame, solar_df3::DataFrame, wind_df3::DataFrame, solar_df4::DataFrame, wind_df4::DataFrame, cf_threshold::Float64, duration_threshold::Int64 , countries::Vector{Symbol})
+    # Identify dunkelflaute events
+    dunkelflaute1_1 = (solar_df1[!, countries[1]] .< cf_threshold) .& (wind_df1[!, countries[1]] .< cf_threshold)
+    dunkelflaute1_2 = (solar_df1[!, countries[2]] .< cf_threshold) .& (wind_df1[!, countries[2]] .< cf_threshold)
+    dunkelflaute1_3 = (solar_df1[!, countries[3]] .< cf_threshold) .& (wind_df1[!, countries[3]] .< cf_threshold)
+    dunkelflaute1 = dunkelflaute1_1 .& dunkelflaute1_2 .& dunkelflaute1_3
+
+    dunkelflaute2_1 = (solar_df2[!, countries[1]] .< cf_threshold) .& (wind_df2[!, countries[1]] .< cf_threshold)
+    dunkelflaute2_2 = (solar_df2[!, countries[2]] .< cf_threshold) .& (wind_df2[!, countries[2]] .< cf_threshold)
+    dunkelflaute2_3 = (solar_df2[!, countries[3]] .< cf_threshold) .& (wind_df2[!, countries[3]] .< cf_threshold)
+    dunkelflaute2 = dunkelflaute2_1 .& dunkelflaute2_2 .& dunkelflaute2_3
+
+    dunkelflaute3_1 = (solar_df3[!, countries[1]] .< cf_threshold) .& (wind_df3[!, countries[1]] .< cf_threshold)
+    dunkelflaute3_2 = (solar_df3[!, countries[2]] .< cf_threshold) .& (wind_df3[!, countries[2]] .< cf_threshold)
+    dunkelflaute3_3 = (solar_df3[!, countries[3]] .< cf_threshold) .& (wind_df3[!, countries[3]] .< cf_threshold)
+    dunkelflaute3 = dunkelflaute3_1 .& dunkelflaute3_2 .& dunkelflaute3_3
+
+    dunkelflaute4_1 = (solar_df4[!, countries[1]] .< cf_threshold) .& (wind_df4[!, countries[1]] .< cf_threshold)
+    dunkelflaute4_2 = (solar_df4[!, countries[2]] .< cf_threshold) .& (wind_df4[!, countries[2]] .< cf_threshold)
+    dunkelflaute4_3 = (solar_df4[!, countries[3]] .< cf_threshold) .& (wind_df4[!, countries[3]] .< cf_threshold)
+    dunkelflaute4 = dunkelflaute4_1 .& dunkelflaute4_2 .& dunkelflaute4_3
+    
+    #return dunkelflaute
+    #dunkelflaute = (solar_df1[!, countries[1]] .< cf_threshold) .& (wind_df1[!, countries[1]] .< cf_threshold)
+
+    # Initialize variables
+    event_lengths1 = Int[]
+    count1 = 0
+    for value in dunkelflaute1  #column_data
+        if value
+            count1 += 1
+        else
+            if count1 >= duration_threshold
+                push!(event_lengths1, count1)
+            end
+            count1 = 0
+        end
+    end
+    # Initialize variables
+    event_lengths2 = Int[]
+    count2 = 0
+    for value in dunkelflaute2  #column_data
+        if value
+            count2 += 1
+        else
+            if count2 >= duration_threshold
+                push!(event_lengths2, count2)
+            end
+            count2 = 0
+        end
+    end
+    # Initialize variables
+    event_lengths3 = Int[]
+    count3 = 0
+    for value in dunkelflaute3  #column_data
+        if value
+            count3 += 1
+        else
+            if count3 >= duration_threshold
+                push!(event_lengths3, count3)
+            end
+            count3 = 0
+        end
+    end
+    # Initialize variables
+    event_lengths4 = Int[]
+    count4 = 0
+    for value in dunkelflaute4  #column_data
+        if value
+            count4 += 1
+        else
+            if count4 >= duration_threshold
+                push!(event_lengths4, count4)
+            end
+            count4 = 0
+        end
+    end
+    # Calculate event frequencies
+    counts1 = Dict{Int, Int}()
+    for value in event_lengths1
+        counts1[value] = get(counts1, value, 0) + 1
+    end
+    # Calculate event frequencies
+    counts2 = Dict{Int, Int}()
+    for value in event_lengths2
+        counts2[value] = get(counts2, value, 0) + 1
+    end
+    # Calculate event frequencies
+    counts3 = Dict{Int, Int}()
+    for value in event_lengths3
+        counts3[value] = get(counts3, value, 0) + 1
+    end
+    # Calculate event frequencies
+    counts4 = Dict{Int, Int}()
+    for value in event_lengths4
+        counts4[value] = get(counts4, value, 0) + 1
+    end
+    event_frequencies1 = OrderedDict(sort(collect(counts1)))
+    event_frequencies2 = OrderedDict(sort(collect(counts2)))
+    event_frequencies3 = OrderedDict(sort(collect(counts3)))
+    event_frequencies4 = OrderedDict(sort(collect(counts4)))
+    # Generate the plot
+    plot(collect(keys(event_frequencies1)) ./ 8, collect(values(event_frequencies1)), xlabel = "Duration (days)", ylabel = "Frequency", legend = true, label = "Historical (1986-2015)", title = "DunkelFlaute - North Europe")
+    plot!(collect(keys(event_frequencies2)) ./ 8, collect(values(event_frequencies2)), xlabel = "Duration (days)", ylabel = "Frequency", legend = true, label = "CNRM (2070-2099)")
+    plot!(collect(keys(event_frequencies3)) ./ 8, collect(values(event_frequencies3)), xlabel = "Duration (days)", ylabel = "Frequency", legend = true, label = "EARTH (2070-2099)")
+    plot!(collect(keys(event_frequencies4)) ./ 8, collect(values(event_frequencies4)), xlabel = "Duration (days)", ylabel = "Frequency", legend = true, label = "HadGEM (2070-2099)")
+
+    #bar(collect(keys(event_frequencies)), collect(values(event_frequencies)), xlabel = "Number of Consecutive 'true'", ylabel = "Frequency", legend = false, title = "Consecutive 'true' Occurrences")
+    #return plot1
+end
+
+#analyze_and_plot_dunkelflaute(solar_df, wind_df, 0.2, 8, North)
+analyze_and_plot_dunkelflaute(solar_df1, wind_df1, solar_df2, wind_df2, solar_df3, wind_df3, solar_df4, wind_df4, 0.2, 8, North)
+
+
 
 
 # Parameter for function to reformat data

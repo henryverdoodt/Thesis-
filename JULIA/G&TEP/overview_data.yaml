@@ -6,6 +6,7 @@ General:
   inflation: 0.02
   discount_rate: 0.1
   valueOfLostLoad: 1000 # EUR / MWh
+  hurdle_cost: 0.01 # EUR / MWh
 
 ADMM:
  rho_EUA: 1 # rho ADMM penalty term, EUA market

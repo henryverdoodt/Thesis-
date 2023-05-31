@@ -34,6 +34,18 @@ function get_generators_capacity_storage(m::Model, I::Vector{String}, N::Vector{
     return gen_dict
 end
 
+function get_generators_capacity_storage_fixed_network(m::Model, I::Vector{String}, IV::Vector{String}, N::Vector{String})
+    gen_dict = Dict{String, Dict{String, Float64}}()  
+    for node in N
+        gen_dict[node] = Dict((gen => 0.0 for gen in I)...)
+        for unit in IV
+            gen_dict[node][unit] = value.(m.ext[:variables][:cap][unit, node])
+        end
+        gen_dict[node]["Biomass"] = value.(m.ext[:parameters][:cap_exist][node])
+    end
+    return gen_dict
+end
+
 function get_generators_capacity_storage_years(m::Model, I::Vector{String}, N::Vector{String}, S::Vector{String}, year::Int64)
     gen_dict = Dict{String, Dict{String, Dict{Int64, Float64}}}()  
     for node in N
@@ -61,15 +73,37 @@ function get_generators_capacity_storage_relative(m::Model, I::Vector{String}, N
     return gen_dict
 end
 
+function find_line_number(network::Dict, countries::Vector)
+    for (name, line) in network
+        if line["Connection"] == countries
+            # Return the line number if the cities match
+            return parse(Int, split(name, "_")[2])
+        end
+    end
+    # Return Nothing if no match is found
+    return nothing
+end
+
 # Create a dictionaries to store the AC transmission capacity
 function get_ac_transmission_capacity(m::Model, L_ac::Vector{Vector{String}})
     trans_ac_dict = Dict(la => value.(m.ext[:variables][:varlac][la]) for la in L_ac)
     return trans_ac_dict
 end
 
+function get_ac_transmission_capacity_fixed_network(m::Model, L_ac::Vector{Vector{String}})
+    trans_ac_dict = Dict(la => value.(float(m.ext[:parameters][:Fl_MAX_AC][find_line_number(network["AC_Lines"], la)])) for la in L_ac)
+    return trans_ac_dict
+end
+
+
 # Create a dictionaries to store the AC and DC transmission capacity
 function get_dc_transmission_capacity(m::Model, L_dc::Vector{Vector{String}})
     trans_dc_dict = Dict(ld => value.(m.ext[:variables][:varldc][ld]) for ld in L_dc)
+    return trans_dc_dict
+end
+
+function get_dc_transmission_capacity_fixed_network(m::Model, L_dc::Vector{Vector{String}})
+    trans_dc_dict = Dict(ld => value.(float(m.ext[:parameters][:Fl_MAX_DC][find_line_number(network["DC_Lines"], ld)])) for ld in L_dc)
     return trans_dc_dict
 end
 
@@ -86,8 +120,6 @@ function matrix_generators_data(gen_dict::Dict{String, Dict{String, Float64}})
             data[i, j] = gen_dict[node][unit_type]/1000
         end
     end
-    #cols_to_remove = findall(all.(x -> x == 0.0, eachcol(data)))
-    #data = data[:, setdiff(1:size(data, 2), cols_to_remove)]
     return data
 end
 
@@ -96,7 +128,8 @@ Generator_colors = [:green, :blue, :orange, :lightblue, :purple, :gold, :red, :g
 Generator_labels = ["Biomass" "WindOffshore" "CCGT_new" "WindOnshore" "Nuclear" "Solar" "OCGT" "ICE"]   # ["Biomass" "WindOffshore" "WindOnshore" "Solar"]  
 
 Generator_colors_storage = [:green, :blue, :orange, :magenta, :lightblue, :purple, :gold, :red, :gray, :cyan]    # [:green, :blue, :lightblue, :gold]  
-Generator_labels_storage = ["Biomass" "WindOffshore" "CCGT_new" "OCGT_H" "WindOnshore" "Nuclear" "Solar" "OCGT" "ICE" "PtH"]   # ["Biomass" "WindOffshore" "WindOnshore" "Solar"] 
+Generator_labels_storage = ["Biomass" "WindOffshore" "CCGT_new" "OCGT_H" "WindOnshore" "Nuclear" "Solar" "OCGT" "ICE" "PtH"]   # ["Biomass" "WindOffshore" "WindOnshore" "Solar"]
+Generator_colors_dict = Dict(zip(Generator_labels_storage, Generator_colors_storage))
 
 function plot_generator_capacities(data_matrix::Matrix{Float64}, nodes::Vector{String}, Generator_colors::Vector{Symbol}, Generator_labels::Matrix{String}, title::String)
     # Plot generation stacked bar chart
@@ -110,6 +143,37 @@ function plot_generator_capacities(data_matrix::Matrix{Float64}, nodes::Vector{S
         color_palette= Generator_colors,
         title= title,
         legend= :outertopright)
+end
+
+
+function plot_generator_capacities_new(gen_dict::Dict{String, Dict{String, Float64}}, Generator_colors::Dict{String, Symbol}, title::String)
+    # Extract the node names and the generating unit types
+    nodes = collect(keys(gen_dict))
+    unit_types = collect(keys(gen_dict[nodes[1]]))
+
+    # Create the data matrix
+    data = zeros(length(nodes), length(unit_types))
+    for (i, node) in enumerate(nodes)
+        for (j, unit_type) in enumerate(unit_types)
+            data[i, j] = gen_dict[node][unit_type]/1000
+        end
+    end
+
+    # Create the color palette and labels
+    colors = [Generator_colors[unit_type] for unit_type in unit_types]
+    labels = [unit_type for unit_type in unit_types]
+
+    # Plot generation stacked bar chart
+    groupedbar(data,
+        bar_position = :stack,
+        bar_width = 0.5,
+        bar_edges = true,
+        ylabel = "Capacity (MW)",
+        xticks = (1:length(nodes), nodes),
+        label = hcat(labels...),
+        color_palette = colors,
+        title = title,
+        legend = :outertopright)
 end
 
 

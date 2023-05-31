@@ -15,6 +15,24 @@ Nodes:
   Node_14: "IT"
   Node_15: "PT"
 
+Existing_Capacity:
+  ES: 40000 #MW
+  FR: 67000 #MW
+  DE: 90000 #MW
+  BE: 10000 #MW
+  UK: 24000 #MW
+  NL: 16000 #MW
+  DK: 3000 #MW
+  NO: 24000 #MW
+  SE: 14000 #MW
+  FI: 12000 #MW
+  IE: 4000 #MW
+  CH: 3000 #MW
+  AT: 9000 #MW
+  IT: 42000 #MW
+  PT: 5000 #MW
+
+
 
 Bl_ac: 1000 # μS/km -> Source ChatGPT: in the range of 1 to 10 μS/km
 Bl_dc: 100 # μS/km -> Source ChatGPT: in the range of 0.1 to 1 μS/km
@@ -133,7 +151,7 @@ AC_Lines:
   Connection: ["CH", "DE"]
   Length: 100 # km
   Price: 16450 #31280 # EUR/km.MW
-  Capacity_2025: 3850 # MW   # Today's grid + expected additional capacity until 2025              
+  Capacity_2025: 4200 # MW   # Today's grid + expected additional capacity until 2025              
   Capacity_2030: 5400 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2030 
   Capacity_2040: 5400 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2040 
 
@@ -149,7 +167,7 @@ AC_Lines:
   Connection: ["SE", "NO"]
   Length: 100 # km
   Price: 16450 #31280 # EUR/km.MW
-  Capacity_2025: 3995 # MW   # Today's grid + expected additional capacity until 2025              
+  Capacity_2025: 3695 # MW   # Today's grid + expected additional capacity until 2025              
   Capacity_2030: 3995 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2030 
   Capacity_2040: 4995 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2040 
 
@@ -216,7 +234,7 @@ DC_Lines:
   Connection: ["UK", "IE"]    # Shotton (Wales) - Woodland
   Length: 130 # km
   Price: 16450 #41150 # EUR/km.MW
-  Capacity_2025: 1000 # MW   # Today's grid + expected additional capacity until 2025              
+  Capacity_2025: 1750 # MW   # Today's grid + expected additional capacity until 2025              
   Capacity_2030: 2450 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2030 
   Capacity_2040: 2954 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2040 
 
@@ -224,7 +242,7 @@ DC_Lines:
   Connection: ["SE", "DK"]    # Lindome - Vester
   Length: 147 # km
   Price: 16450 #41150 # EUR/km.MW
-  Capacity_2025: 715 # MW   # Today's grid + expected additional capacity until 2025              
+  Capacity_2025: 750 # MW   # Today's grid + expected additional capacity until 2025              
   Capacity_2030: 1950 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2030 
   Capacity_2040: 2415 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2040 
 
@@ -232,7 +250,7 @@ DC_Lines:
   Connection: ["SE", "FI"]    # Dannebo - Rauma
   Length: 233 # km
   Price: 16450 #41150 # EUR/km.MW
-  Capacity_2025: 2300 # MW   # Today's grid + expected additional capacity until 2025              
+  Capacity_2025: 2400 # MW   # Today's grid + expected additional capacity until 2025              
   Capacity_2030: 4000 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2030 
   Capacity_2040: 4800 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2040 
 
