@@ -466,6 +466,8 @@ using DataFrames
 using StatsPlots
 using Statistics
 using DataStructures
+using Plots
+using PrettyTables
 
 countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"] 
 wind_df1 = reformat_coper_windon_multiple_years(windon_coper_CNRM, countries, countries_windon_coper_CNRM, 1986, 2015)
@@ -488,7 +490,21 @@ function countmap(data)
     return counts
 end
 
-function analyze_and_plot_dunkelflaute(solar_df1::DataFrame, wind_df1::DataFrame, solar_df2::DataFrame, wind_df2::DataFrame, solar_df3::DataFrame, wind_df3::DataFrame, solar_df4::DataFrame, wind_df4::DataFrame, cf_threshold::Float64, duration_threshold::Int64 , countries::Vector{Symbol})
+function cumul_dunkelflaute_periods(original_dict::OrderedDict)
+    modified_dict = OrderedDict()
+    keys_list = collect(keys(original_dict))
+    count = 2 
+    for (key, value) in original_dict
+        if count <= length(keys_list)
+            modified_value = value + sum(original_dict[keys_list[j]] for j in (count):length(keys_list))
+            modified_dict[key] = modified_value
+            count += 1
+        end
+    end
+    return modified_dict
+end
+
+function analyze_and_plot_dunkelflaute(solar_df1::DataFrame, wind_df1::DataFrame, solar_df2::DataFrame, wind_df2::DataFrame, solar_df3::DataFrame, wind_df3::DataFrame, solar_df4::DataFrame, wind_df4::DataFrame, cf_threshold::Float64, duration_threshold::Int64 , countries::Vector{Symbol}, numerical::Bool)
     # Identify dunkelflaute events
     dunkelflaute1_1 = (solar_df1[!, countries[1]] .< cf_threshold) .& (wind_df1[!, countries[1]] .< cf_threshold)
     dunkelflaute1_2 = (solar_df1[!, countries[2]] .< cf_threshold) .& (wind_df1[!, countries[2]] .< cf_threshold)
@@ -585,22 +601,55 @@ function analyze_and_plot_dunkelflaute(solar_df1::DataFrame, wind_df1::DataFrame
     for value in event_lengths4
         counts4[value] = get(counts4, value, 0) + 1
     end
+    event_frequencies1_cumul = cumul_dunkelflaute_periods(OrderedDict(sort(collect(counts1))))
+    event_frequencies2_cumul = cumul_dunkelflaute_periods(OrderedDict(sort(collect(counts2))))
+    event_frequencies3_cumul = cumul_dunkelflaute_periods(OrderedDict(sort(collect(counts3))))
+    event_frequencies4_cumul = cumul_dunkelflaute_periods(OrderedDict(sort(collect(counts4))))
+
     event_frequencies1 = OrderedDict(sort(collect(counts1)))
     event_frequencies2 = OrderedDict(sort(collect(counts2)))
     event_frequencies3 = OrderedDict(sort(collect(counts3)))
     event_frequencies4 = OrderedDict(sort(collect(counts4)))
+
+    if numerical
+        result1 = sum([k * v for (k, v) in zip(keys(event_frequencies1) ./ 8, values(event_frequencies1))])
+        result2 = sum([k * v for (k, v) in zip(keys(event_frequencies2) ./ 8, values(event_frequencies2))])
+        result3 = sum([k * v for (k, v) in zip(keys(event_frequencies3) ./ 8, values(event_frequencies3))])
+        result4 = sum([k * v for (k, v) in zip(keys(event_frequencies4) ./ 8, values(event_frequencies4))])
+        # Generate some example data
+        results = OrderedDict("Historical" => result1, "CNRM" => result2, "EARTH" => result3, "HadGEM" => result4)
+        return results
+    end
     # Generate the plot
-    plot(collect(keys(event_frequencies1)) ./ 8, collect(values(event_frequencies1)), xlabel = "Duration (days)", ylabel = "Frequency", legend = true, label = "Historical (1986-2015)", title = "DunkelFlaute - North Europe")
-    plot!(collect(keys(event_frequencies2)) ./ 8, collect(values(event_frequencies2)), xlabel = "Duration (days)", ylabel = "Frequency", legend = true, label = "CNRM (2070-2099)")
-    plot!(collect(keys(event_frequencies3)) ./ 8, collect(values(event_frequencies3)), xlabel = "Duration (days)", ylabel = "Frequency", legend = true, label = "EARTH (2070-2099)")
-    plot!(collect(keys(event_frequencies4)) ./ 8, collect(values(event_frequencies4)), xlabel = "Duration (days)", ylabel = "Frequency", legend = true, label = "HadGEM (2070-2099)")
+    plot(collect(keys(event_frequencies1_cumul)) ./ 8, collect(values(event_frequencies1_cumul)), xlabel = "Duration (days)", ylabel = "Frequency", legend = true, label = "Historical (1986-2015)", title = "DunkelFlaute - North Europe (CF threshold: $(cf_threshold))")
+    plot!(collect(keys(event_frequencies2_cumul)) ./ 8, collect(values(event_frequencies2_cumul)), xlabel = "Duration (days)", ylabel = "Frequency", legend = true, label = "CNRM (2070-2099)")
+    plot!(collect(keys(event_frequencies3_cumul)) ./ 8, collect(values(event_frequencies3_cumul)), xlabel = "Duration (days)", ylabel = "Frequency", legend = true, label = "EARTH (2070-2099)")
+    plot!(collect(keys(event_frequencies4_cumul)) ./ 8, collect(values(event_frequencies4_cumul)), xlabel = "Duration (days)", ylabel = "Frequency", legend = true, label = "HadGEM (2070-2099)") 
 
     #bar(collect(keys(event_frequencies)), collect(values(event_frequencies)), xlabel = "Number of Consecutive 'true'", ylabel = "Frequency", legend = false, title = "Consecutive 'true' Occurrences")
     #return plot1
 end
 
-#analyze_and_plot_dunkelflaute(solar_df, wind_df, 0.2, 8, North)
-analyze_and_plot_dunkelflaute(solar_df1, wind_df1, solar_df2, wind_df2, solar_df3, wind_df3, solar_df4, wind_df4, 0.2, 8, North)
+analyze_and_plot_dunkelflaute(solar_df1, wind_df1, solar_df2, wind_df2, solar_df3, wind_df3, solar_df4, wind_df4, 0.2, 8, North, false)
+
+
+results = OrderedDict("Historical" => Float64[], "CNRM" => Float64[], "EARTH" => Float64[], "HadGEM" => Float64[]) 
+for cf in 0:0.02:0.98
+    dict = analyze_and_plot_dunkelflaute(solar_df1, wind_df1, solar_df2, wind_df2, solar_df3, wind_df3, solar_df4, wind_df4, cf, 8, North, true)
+    push!(results["Historical"], dict["Historical"])
+    push!(results["CNRM"], dict["CNRM"])
+    push!(results["EARTH"], dict["EARTH"])
+    push!(results["HadGEM"], dict["HadGEM"])
+end
+x_values = collect(1:length(results["Historical"])) ./ length(results["Historical"])
+plot(x_values, results["Historical"], xlabel = "CF Threshold", ylabel = "Persistence time (days)", legend = true, label = "Historical (1986-2015)", title = "DunkelFlaute - North Europe")
+plot!(x_values, results["CNRM"], xlabel = "CF Threshold", ylabel = "Persistence time (days)", legend = true, label = "CNRM (2070-2099)")
+plot!(x_values, results["EARTH"], xlabel = "CF Threshold", ylabel = "Persistence time (days)", legend = true, label = "EARTH (2070-2099)")
+plot!(x_values, results["HadGEM"], xlabel = "CF Threshold", ylabel = "Persistence time (days)", legend = true, label = "HadGEM (2070-2099)") 
+
+
+
+
 
 
 

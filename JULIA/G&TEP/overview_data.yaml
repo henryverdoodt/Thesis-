@@ -419,6 +419,24 @@ PowerSector:
   H2CN_cap: "NO" # participate in the carbon neutral H2 market (capacity)
   NG: "NO" # participate in the natural gas market
 
+ Biofuel: 
+  fuelCosts: 400 # MEUR/TWh - (assumes twice the cost of fossil fuel)
+  emissions: 0 # Mton/TWh - made from biomass (assume zero emissions)
+  efficiency: 1 # not used (Inital value was 0 but change it to 1 to use it in the formulas, already taken into account in the fuelcost price)
+  gMAX:  1 # MW   #not used
+  OC: 453 # MEUR/GW   #assume same as ICE
+  Lifetime: 15 # years  #assume same as ICE
+  AF: 0.85 # -      #assume same as ICE
+
+ Hydro_RoR: 
+  fuelCosts: 5 # MEUR/TWh - for 2010 - See calculation in Obsidian DATA part - # https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2012/RE_Technologies_Cost_Analysis-HYDROPOWER.pdf
+  emissions: 0 # Mton/TWh - assume 
+  efficiency: 1 # - assume taken into account in fuelcost
+  gMAX:  1 # MW   #not used
+  OC: 1 # MEUR/GW   #not used
+  Lifetime: 15 # years  #assume same as ICE
+  AF: 0.70 # -      #assume between 0.20 and 0.95
+
 
 Storage:
  OCGT_H:

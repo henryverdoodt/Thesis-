@@ -87,7 +87,7 @@ Pkg.add("Images")
  function define_sets!(m::Model, data::Dict, network::Dict)
      m.ext[:sets] = Dict()
      J = m.ext[:sets][:J] = 1:timestep(aggregate_3h) # Timesteps  # 2920  # 8760
-     I = m.ext[:sets][:I] = [id for id in keys(data["PowerSector"]) if id ∉ ["SPP_lignite", "SPP_coal", "CCGT_old"]] # Generators per type
+     I = m.ext[:sets][:I] = [id for id in keys(data["PowerSector"]) if id ∉ ["CCGT_old"]] # Generators per type "SPP_lignite", "SPP_coal",
      L_ac = m.ext[:sets][:AC_Lines] = [network["AC_Lines"]["AC_$(i)"]["Connection"] for i in 1:length(keys(network["AC_Lines"]))] # AC Lines
      L_dc = m.ext[:sets][:DC_Lines] = [network["DC_Lines"]["DC_$(i)"]["Connection"] for i in 1:length(keys(network["DC_Lines"]))] # DC Lines
      L = m.ext[:sets][:Lines] = union(m.ext[:sets][:AC_Lines],m.ext[:sets][:DC_Lines]) # Lines
@@ -137,6 +137,8 @@ Pkg.add("Images")
      # extract sets
      I = m.ext[:sets][:I]
      S = m.ext[:sets][:S]
+     N = m.ext[:sets][:Nodes]
+     IED = ["Nuclear", "SPP_lignite", "SPP_coal", "OCGT", "ICE", "Biofuel", "Hydro_RoR"]
  
      # Create parameter dictonary
      m.ext[:parameters] = Dict()
@@ -149,7 +151,7 @@ Pkg.add("Images")
      Bl_ac = m.ext[:parameters][:Bl_ac] = network["Bl_ac"]*10^(-6) # S/km, Susceptance of AC line 
      Bl_dc =  m.ext[:parameters][:Bl_dc] = network["Bl_dc"]*10^(-6) # S/km, Susceptance of DC line  
      Bl = m.ext[:parameters][:Bl] = cat(Bl_ac, Bl_dc, dims=1) # S/km, Susceptance of All line [USE cat() OR union() function??]
-     cap_exist = m.ext[:parameters][:cap_exist] = Dict(n => network["Existing_Capacity"][n] for n in N)
+     cap_exist = m.ext[:parameters][:cap_exist] = Dict(n => Dict(i => network["Existing_Capacity"][n][i] for i in IED) for n in N)
 
      # parameters of generators per unit
      d = data["PowerSector"]
@@ -220,9 +222,10 @@ Pkg.add("Images")
      J = m.ext[:sets][:J] # Timesteps
      I = m.ext[:sets][:I] # Generators per type
      I_CO2 = ["CCGT_new", "OCGT", "ICE"] # Generators units emitting CO2
-     ID = ["Nuclear", "CCGT_new", "OCGT", "ICE", "Biomass"]  # ID = ["Nuclear", "SPP_lignite", "SPP_coal", "CCGT_old", "CCGT_new", "OCGT", "ICE", "Biomass"]; As we assume Greenfield method we only take the new tech. and dont take coal into account
+     ID = ["Nuclear", "SPP_lignite", "SPP_coal", "OCGT", "ICE", "Biofuel", "Hydro_RoR"]  # ID = ["Nuclear", "SPP_lignite", "SPP_coal", "CCGT_old", "CCGT_new", "OCGT", "ICE", "Biomass"]; As we assume Greenfield method we only take the new tech. and dont take coal into account
      IV = ["Solar", "WindOnshore", "WindOffshore"]
      IP = ["Solar", "WindOnshore", "WindOffshore", "Biomass"]
+     ITOT = ["Solar", "WindOnshore", "WindOffshore", "Nuclear", "SPP_lignite", "SPP_coal", "OCGT", "ICE", "Biofuel", "Hydro_RoR"]
      L_ac = m.ext[:sets][:AC_Lines] # AC Lines
      L_dc = m.ext[:sets][:DC_Lines] # DC Lines
      L = m.ext[:sets][:Lines] # All Lines
@@ -284,7 +287,7 @@ Pkg.add("Images")
  
  
      # Objective
-     obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in IV, n in N) + sum(VC[i]*g[i,j,n] for i in IP, j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N)) + sum(hurdle_cost*pl[j,l] for j in J, l in L)
+     obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in IV, n in N) + sum(VC[i]*g[i,j,n] for i in ITOT, j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N)) + sum(hurdle_cost*pl[j,l] for j in J, l in L)
 
      #obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in I, n in N) + sum(ICS["PtH"]*cap_PtH[n] for n in N) + sum(ICS["OCGT_H"]*cap_OCGT[n] for n in N) + sum(VC[i]*g[i,j,n] for i in I, j in J, n in N) + sum(VCS["PtH"]*g_PtH[j,n] for j in J, n in N) + sum(VCS["OCGT_H"]*g_OCGT[j,n] for j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N)) + sum(hurdle_cost*pl[j,l] for j in J, l in L)
      #obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in I, n in N) + sum(ICS["PtH"]*cap_PtH[n] for n in N) + sum(ICS["OCGT_H"]*cap_OCGT[n] for n in N) + sum(IC_var_AC[find_line_number(network["AC_Lines"], la)]*varlac[la] for la in L_ac) + sum(IC_var_DC[find_line_number(network["DC_Lines"], ld)]*varldc[ld] for ld in L_dc) + sum(VC[i]*g[i,j,n] for i in I, j in J, n in N) + sum(VCS["PtH"]*g_PtH[j,n] for j in J, n in N) + sum(VCS["OCGT_H"]*g_OCGT[j,n] for j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N))
@@ -292,7 +295,7 @@ Pkg.add("Images")
  
  
      # Constraints
-     con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in IP) + sum(pl[j,l] for l in L if l[1] == n; init=0)  >= D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0)) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
+     con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in ITOT) + sum(pl[j,l] for l in L if l[1] == n; init=0)  >= D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0)) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
      #con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in I) + sum(pl[j,l] for l in L if l[1] == n; init=0) + sum(g_OCGT[j,n])  >= D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0) + sum(g_PtH[j,n])) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
      con_LoL = m.ext[:constraints][:con_LoL] = @constraint(m, [j=J,n=N], 0 <= ens[j,n] <= D[Symbol(n)][j]) # Loss of Load constraint
      #con_PFap_ac = m.ext[:constraints][:con_PFap_ac] = @constraint(m, [j=J,la=L_ac], pl[j,la] == Bl_ac * network["AC_Lines"]["AC_$(find_line_number(network["AC_Lines"], la))"]["Length"] * (θ[j,la[1]] - θ[j,la[2]]) * 400 * 400) # 'DC' Power Flow Approximation [MW] # θ should have a node as argument but l[x] is a node # TAKE LINE VOLTAGE VALUE AS 400kV
@@ -303,7 +306,7 @@ Pkg.add("Images")
      con_varldc2 = m.ext[:constraints][:con_varldc2] = @constraint(m, [j=J,ld=L_dc], -Fl_MAX_DC[find_line_number(network["DC_Lines"], ld)] <= pl[j,ld]) # Lower Limit Power Flow DC
      #con_θb = m.ext[:constraints][:con_θb] = @constraint(m, [j=J,n=N], -pi <= θ[j,n] <= pi) # Bound Voltage angles
      #con_θref = m.ext[:constraints][:con_θref] = @constraint(m, [j=J], θ[j,"BE"] == 0.0) # Voltage angle at ref node
-     con_DGl = m.ext[:constraints][:con_DGl] = @constraint(m, [i=["Biomass"], j=J, n=N], g[i,j,n] <= AF[i]*cap_exist[n]) # Dispatchable generation limit
+     con_DGl = m.ext[:constraints][:con_DGl] = @constraint(m, [i=ID, j=J, n=N], g[i,j,n] <= AF[i]*cap_exist[n][i]) # Dispatchable generation limit
      #con_DGl = m.ext[:constraints][:con_DGl] = @constraint(m, [i=ID, j=J, n=N], g[i,j,n] <= AF[i]*cap[i,n]) # Dispatchable generation limit
      con_SGl = m.ext[:constraints][:con_SGl] = @constraint(m, [i=["Solar"], j=J, n=N], g[i,j,n] <= AFS[Symbol(n)][j]*AF[i]*cap[i,n]) # Solar generation limit
      con_WONGl = m.ext[:constraints][:con_WONGl] = @constraint(m, [i=["WindOnshore"], j=J, n=N], g[i,j,n] <= AFWON[Symbol(n)][j]*AF[i]*cap[i,n]) # Windon generation limit
@@ -364,11 +367,14 @@ calculate_country_capacity(Matrix(value.(m.ext[:variables][:cap])), countries_su
  S = m.ext[:sets][:S]
  IV = ["Solar", "WindOnshore", "WindOffshore"]
  IP = ["Solar", "WindOnshore", "WindOffshore", "Biomass"]
+ ID = ["Nuclear", "SPP_lignite", "SPP_coal", "OCGT", "ICE", "Biofuel", "Hydro_RoR"]  
+ ITOT = ["Solar", "WindOnshore", "WindOffshore", "Nuclear", "SPP_lignite", "SPP_coal", "OCGT", "ICE", "Biofuel", "Hydro_RoR"]
+
  
  
  gen_dict_abs_year = get_generators_capacity_storage_years(m, I, N, S, year)
  #gen_dict_abs = get_generators_capacity_storage(m, I, N, S)
- gen_dict_abs = get_generators_capacity_storage_fixed_network(m, IP, IV, N)
+ gen_dict_abs = get_generators_capacity_storage_fixed_network(m, ITOT, IV, ID, N)
  gen_dict_rel = get_generators_capacity_storage_relative(m, I, N, S)
  data_matrix_abs = matrix_generators_data(gen_dict_abs)
  data_matrix_rel = matrix_generators_data(gen_dict_rel)
