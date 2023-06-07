@@ -16,22 +16,126 @@ Nodes:
   Node_15: "PT"
 
 Existing_Capacity:
-  ES: 40000 #MW
-  FR: 67000 #MW
-  DE: 90000 #MW
-  BE: 10000 #MW
-  UK: 24000 #MW
-  NL: 16000 #MW
-  DK: 3000 #MW
-  NO: 24000 #MW
-  SE: 14000 #MW
-  FI: 12000 #MW
-  IE: 4000 #MW
-  CH: 3000 #MW
-  AT: 9000 #MW
-  IT: 42000 #MW
-  PT: 5000 #MW
-
+  ES: 
+   Nuclear: 3041 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 0 #MW
+   OCGT:  24499 #MW           # 'GAS' assume 
+   ICE: 0 #MW
+   Biofuel: 0 #MW
+   Hydro_RoR: 3589 #MW
+  FR: 
+   Nuclear: 59110 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 0 #MW
+   OCGT:  7189 #MW           # 'GAS' assume 
+   ICE: 917 #MW
+   Biofuel: 0 #MW
+   Hydro_RoR: 12188 #MW
+  DE: 
+   Nuclear: 0 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 0 #MW
+   OCGT:  29574 #MW           # 'GAS' assume 
+   ICE: 850 #MW
+   Biofuel: 0 #MW
+   Hydro_RoR: 4368 #MW
+  BE: 
+   Nuclear: 2077 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 0 #MW
+   OCGT:  4612 #MW           # 'GAS' assume 
+   ICE: 158 #MW
+   Biofuel: 354 #MW
+   Hydro_RoR: 148 #MW
+  UK: 
+   Nuclear: 5195 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 0 #MW
+   OCGT:  33675 #MW           # 'GAS' assume 
+   ICE: 783 #MW
+   Biofuel: 18 #MW
+   Hydro_RoR: 2095 #MW
+  NL: 
+   Nuclear: 486 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 0 #MW
+   OCGT:  11552 #MW           # 'GAS' assume 
+   ICE: 0 #MW
+   Biofuel: 1580 #MW
+   Hydro_RoR: 38 #MW
+  DK: 
+   Nuclear: 0 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 3 #MW
+   OCGT:  859 #MW           # 'GAS' assume 
+   ICE: 556 #MW
+   Biofuel: 2338 #MW
+   Hydro_RoR: 0 #MW
+  NO: 
+   Nuclear: 0 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 0 #MW
+   OCGT:  0 #MW           # 'GAS' assume 
+   ICE: 0 #MW
+   Biofuel: 0 #MW
+   Hydro_RoR: 0 #MW
+  SE: 
+   Nuclear: 6835 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 0 #MW
+   OCGT:  200 #MW           # 'GAS' assume 
+   ICE: 0 #MW
+   Biofuel: 0 #MW
+   Hydro_RoR: 0 #MW
+  FI: 
+   Nuclear: 4394 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 206 #MW
+   OCGT:  1044 #MW           # 'GAS' assume 
+   ICE: 0 #MW
+   Biofuel: 990 #MW
+   Hydro_RoR: 0 #MW
+  IE: 
+   Nuclear: 0 #MW
+   SPP_lignite: 39 #MW
+   SPP_coal: 0 #MW
+   OCGT:  3947 #MW           # 'GAS' assume 
+   ICE: 324 #MW
+   Biofuel: 39 #MW
+   Hydro_RoR: 215 #MW
+  CH: 
+   Nuclear: 1190 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 0 #MW
+   OCGT:  0 #MW           # 'GAS' assume 
+   ICE: 0 #MW
+   Biofuel: 0 #MW
+   Hydro_RoR: 4210 #MW
+  AT: 
+   Nuclear: 0 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 0 #MW
+   OCGT:  3260 #MW           # 'GAS' assume 
+   ICE: 120 #MW
+   Biofuel: 0 #MW
+   Hydro_RoR: 4893 #MW
+  IT: 
+   Nuclear: 0 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 0 #MW
+   OCGT:  43478 #MW           # 'GAS' assume 
+   ICE: 0 #MW
+   Biofuel: 0 #MW
+   Hydro_RoR: 6246 #MW
+  PT: 
+   Nuclear: 0 #MW
+   SPP_lignite: 0 #MW
+   SPP_coal: 0 #MW
+   OCGT:  2839 #MW           # 'GAS' assume 
+   ICE: 0 #MW
+   Biofuel: 0 #MW
+   Hydro_RoR: 505 #MW
 
 
 Bl_ac: 1000 # μS/km -> Source ChatGPT: in the range of 1 to 10 μS/km
