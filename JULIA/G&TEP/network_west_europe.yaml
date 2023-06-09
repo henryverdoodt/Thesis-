@@ -138,6 +138,323 @@ Existing_Capacity:
    Hydro_RoR: 505 #MW
 
 
+Storage_Existing_Capacity:
+  ES: 
+    Hydro_Pon:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Hydro_Res:
+      Emax: 11648513 #MWh
+      P_ch: 0 #MW
+      P_dis: 10972 #MW
+    PHS_OL:
+      Emax: 5961860 #MWh
+      P_ch: 2424 #MW
+      P_dis: 2683 #MW
+    PHS_CL:
+      Emax: 175221 #MWh
+      P_ch: 7166 #MW
+      P_dis: 7095 #MW
+    Batteries:
+      Emax: 5000 #MWh
+      P_ch: 2500 #MW
+      P_dis: 2500 #MW
+  FR: 
+    Hydro_Pon:
+      Emax: 13600 #MWh
+      P_ch: 0 #MW
+      P_dis: 1412 #MW
+    Hydro_Res:
+      Emax: 10000000 #MWh
+      P_ch: 0 #MW
+      P_dis: 9847 #MW
+    PHS_OL:
+      Emax: 90000 #MWh
+      P_ch: 1850 #MW
+      P_dis: 1850 #MW
+    PHS_CL:
+      Emax: 10000 #MWh
+      P_ch: 1950 #MW
+      P_dis: 1950 #MW
+    Batteries:
+      Emax: 940 #MWh
+      P_ch: 470 #MW
+      P_dis: 470 #MW
+  DE: 
+    Hydro_Pon:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Hydro_Res:
+      Emax: 258578 #MWh
+      P_ch: 0 #MW
+      P_dis: 1297 #MW
+    PHS_OL:
+      Emax: 416759 #MWh
+      P_ch: 1361 #MW
+      P_dis: 1644 #MW
+    PHS_CL:
+      Emax: 629880 #MWh
+      P_ch: 7418 #MW
+      P_dis: 7381 #MW
+    Batteries:
+      Emax: 6400 #MWh
+      P_ch: 3200 #MW
+      P_dis: 3200 #MW
+  BE: 
+    Hydro_Pon:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Hydro_Res:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    PHS_OL:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    PHS_CL:
+      Emax: 5750 #MWh
+      P_ch: 1227 #MW
+      P_dis: 1305 #MW
+    Batteries:
+      Emax: 1920 #MWh
+      P_ch: 779 #MW
+      P_dis: 779 #MW
+  UK: 
+    Hydro_Pon:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Hydro_Res:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    PHS_OL:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    PHS_CL:
+      Emax: 26380 #MWh
+      P_ch: 2684 #MW
+      P_dis: 2744 #MW
+    Batteries:
+      Emax: 10761 #MWh
+      P_ch: 9947 #MW
+      P_dis: 9259 #MW
+  NL: 
+    Hydro_Pon:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Hydro_Res:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    PHS_OL:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    PHS_CL:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Batteries:
+      Emax: 38650 #MWh
+      P_ch: 10430 #MW
+      P_dis: 15430 #MW
+  DK: 
+    Hydro_Pon:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Hydro_Res:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    PHS_OL:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    PHS_CL:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Batteries:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+  NO: 
+    Hydro_Pon:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Hydro_Res:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    PHS_OL:
+      Emax: 89577419 #MWh
+      P_ch: 1093 #MW
+      P_dis: 37830 #MW
+    PHS_CL:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Batteries:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+  SE: 
+    Hydro_Pon:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Hydro_Res:
+      Emax: 31931333 #MWh
+      P_ch: 0 #MW
+      P_dis: 15617 #MW
+    PHS_OL:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    PHS_CL:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Batteries:
+      Emax: 2165 #MWh
+      P_ch: 541 #MW
+      P_dis: 541 #MW
+  FI: 
+    Hydro_Pon:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Hydro_Res:
+      Emax: 5530000 #MWh
+      P_ch: 0 #MW
+      P_dis: 3237 #MW
+    PHS_OL:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    PHS_CL:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Batteries:
+      Emax: 168 #MWh
+      P_ch: 125 #MW
+      P_dis: 125 #MW
+  IE: 
+    Hydro_Pon:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Hydro_Res:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    PHS_OL:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    PHS_CL:
+      Emax: 1720 #MWh
+      P_ch: 292 #MW
+      P_dis: 292 #MW
+    Batteries:
+      Emax: 800 #MWh
+      P_ch: 400 #MW
+      P_dis: 400 #MW
+  CH: 
+    Hydro_Pon:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Hydro_Res:
+      Emax: 8179439 #MWh
+      P_ch: 0 #MW
+      P_dis: 8530 #MW
+    PHS_OL:
+      Emax: 100000 #MWh
+      P_ch: 1500 #MW
+      P_dis: 2070 #MW
+    PHS_CL:
+      Emax: 109931 #MWh
+      P_ch: 2290 #MW
+      P_dis: 2290 #MW
+    Batteries:
+      Emax: 610 #MWh
+      P_ch: 1220 #MW
+      P_dis: 1220 #MW
+  AT: 
+    Hydro_Pon:
+      Emax: 5315 #MWh
+      P_ch: 0 #MW
+      P_dis: 1147 #MW
+    Hydro_Res:
+      Emax: 769037 #MWh
+      P_ch: 0 #MW
+      P_dis: 2756 #MW
+    PHS_OL:
+      Emax: 1739213 #MWh
+      P_ch: 5143 #MW
+      P_dis: 5674 #MW
+    PHS_CL:
+      Emax: 1800 #MWh
+      P_ch: 300 #MW
+      P_dis: 300 #MW
+    Batteries:
+      Emax: 102 #MWh
+      P_ch: 68 #MW
+      P_dis: 68 #MW
+  IT: 
+    Hydro_Pon:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Hydro_Res:
+      Emax: 5649260 #MWh
+      P_ch: 0 #MW
+      P_dis: 9670 #MW
+    PHS_OL:
+      Emax: 307600 #MWh
+      P_ch: 2092 #MW
+      P_dis: 3332 #MW
+    PHS_CL:
+      Emax: 49300 #MWh
+      P_ch: 5250 #MW
+      P_dis: 5364 #MW
+    Batteries:
+      Emax: 60436 #MWh
+      P_ch: 10167 #MW
+      P_dis: 10167 #MW
+  PT: 
+    Hydro_Pon:
+      Emax: 3700 #MWh
+      P_ch: 0 #MW
+      P_dis: 266 #MW
+    Hydro_Res:
+      Emax: 1289600 #MWh
+      P_ch: 0 #MW
+      P_dis: 3766 #MW
+    PHS_OL:
+      Emax: 2017900 #MWh
+      P_ch: 3586 #MW
+      P_dis: 3839 #MW
+    PHS_CL:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+    Batteries:
+      Emax: 0 #MWh
+      P_ch: 0 #MW
+      P_dis: 0 #MW
+
 Bl_ac: 1000 # μS/km -> Source ChatGPT: in the range of 1 to 10 μS/km
 Bl_dc: 100 # μS/km -> Source ChatGPT: in the range of 0.1 to 1 μS/km
 Lifetime_ac: 40 # years, assumption lifetime of a HVAC

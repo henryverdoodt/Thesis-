@@ -93,6 +93,7 @@ Pkg.add("Images")
      L = m.ext[:sets][:Lines] = union(m.ext[:sets][:AC_Lines],m.ext[:sets][:DC_Lines]) # Lines
      N = m.ext[:sets][:Nodes] =  [network["Nodes"]["Node_$(i)"] for i in 1:length(keys(network["Nodes"]))]# Nodes
  
+     #S = m.ext[:sets][:S] = [s for s in keys(data["Storage_H2"])] # Storage per type
      S = m.ext[:sets][:S] = [s for s in keys(data["Storage"])] # Storage per type
      return m # return model
  end
@@ -152,6 +153,10 @@ Pkg.add("Images")
      Bl_dc =  m.ext[:parameters][:Bl_dc] = network["Bl_dc"]*10^(-6) # S/km, Susceptance of DC line  
      Bl = m.ext[:parameters][:Bl] = cat(Bl_ac, Bl_dc, dims=1) # S/km, Susceptance of All line [USE cat() OR union() function??]
      cap_exist = m.ext[:parameters][:cap_exist] = Dict(n => Dict(i => network["Existing_Capacity"][n][i] for i in IED) for n in N)
+     Emax_Storage = m.ext[:parameters][:Emax_Storage] = Dict(n => Dict(i => network["Storage_Existing_Capacity"][n][i]["Emax"] for i in S) for n in N)
+     Pch_Storage = m.ext[:parameters][:Pch_Storage] = Dict(n => Dict(i => network["Storage_Existing_Capacity"][n][i]["P_ch"] for i in S) for n in N)
+     Pdis_Storage = m.ext[:parameters][:Pdis_Storage] = Dict(n => Dict(i => network["Storage_Existing_Capacity"][n][i]["P_dis"] for i in S) for n in N)
+
 
      # parameters of generators per unit
      d = data["PowerSector"]
@@ -164,14 +169,22 @@ Pkg.add("Images")
      IC = m.ext[:parameters][:IC] = Dict(i => 10^3*(d[SubString(i,1:length(i))]["OC"]*disc_r)/(1-(1/(1+disc_r)^(d[SubString(i,1:length(i))]["Lifetime"]))) for i in I) # EUR/MWy, Investment Cost in generation unit i
      AF = m.ext[:parameters][:AF] = Dict(i => d[SubString(i,1:length(i))]["AF"] for i in I) # Availability facor of a generator
  
+    #  # parameters of Storage per unit
+    #  dS = data["Storage_H2"]
+    #  VCS = m.ext[:parameters][:VCS] = Dict(i => (dS[SubString(i,1:length(i))]["fuelCosts"]/dS[SubString(i,1:length(i))]["efficiency"]) for i in S)  # EUR/MWh, Cost of storage of unit i
+    #  OCS = m.ext[:parameters][:OCS] = Dict(i => 10^3*dS[SubString(i,1:length(i))]["OC"] for i in S) # EUR/MW, Overnight investment cost of a unit
+    #  LifeTS = m.ext[:parameters][:LifeTS] = Dict(i => dS[SubString(i,1:length(i))]["Lifetime"] for i in S) # years, Lifetime of Asset
+    #  ICS = m.ext[:parameters][:ICS] = Dict(i => 10^3*(dS[SubString(i,1:length(i))]["OC"]*disc_r)/(1-(1/(1+disc_r)^(dS[SubString(i,1:length(i))]["Lifetime"]))) for i in S) # EUR/MWy, Investment Cost in generation unit i
+    #  AFSt = m.ext[:parameters][:AFSt] = Dict(i => dS[SubString(i,1:length(i))]["AF"] for i in S) # Availability facor of Storage technology
+     
      # parameters of Storage per unit
      dS = data["Storage"]
-     VCS = m.ext[:parameters][:VCS] = Dict(i => (dS[SubString(i,1:length(i))]["fuelCosts"]/dS[SubString(i,1:length(i))]["efficiency"]) for i in S)  # EUR/MWh, Cost of storage of unit i
-     OCS = m.ext[:parameters][:OCS] = Dict(i => 10^3*dS[SubString(i,1:length(i))]["OC"] for i in S) # EUR/MW, Overnight investment cost of a unit
-     LifeTS = m.ext[:parameters][:LifeTS] = Dict(i => dS[SubString(i,1:length(i))]["Lifetime"] for i in S) # years, Lifetime of Asset
-     ICS = m.ext[:parameters][:ICS] = Dict(i => 10^3*(dS[SubString(i,1:length(i))]["OC"]*disc_r)/(1-(1/(1+disc_r)^(dS[SubString(i,1:length(i))]["Lifetime"]))) for i in S) # EUR/MWy, Investment Cost in generation unit i
+     VCS = m.ext[:parameters][:VCS] = Dict(i => (dS[SubString(i,1:length(i))]["VC"]) for i in S)  # EUR/MWh, Cost of storage of unit i
      AFSt = m.ext[:parameters][:AFSt] = Dict(i => dS[SubString(i,1:length(i))]["AF"] for i in S) # Availability facor of Storage technology
- 
+     eff_ch = m.ext[:parameters][:eff_ch] = Dict(i => dS[SubString(i,1:length(i))]["eff_ch"] for i in S) # Availability facor of Storage technology
+     eff_dis = m.ext[:parameters][:eff_dis] = Dict(i => dS[SubString(i,1:length(i))]["eff_dis"] for i in S) # Availability facor of Storage technology
+
+
      #FC = m.ext[:parameters][:FC] = Dict(i => ((d[SubString(i,1:length(i))]["fuelCosts"])/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # EUR/MWh, Fuelcost Cost of unit i
      #CO2 = m.ext[:parameters][:CO2] = Dict(i => ((d[SubString(i,1:length(i))]["emissions"])/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # ton/MWh, Variable Cost of unit i
  
@@ -258,8 +271,14 @@ Pkg.add("Images")
  
          ### parameters of storage per unit
      VCS = m.ext[:parameters][:VCS]
-     ICS = m.ext[:parameters][:ICS]
+     #ICS = m.ext[:parameters][:ICS]
      AFSt = m.ext[:parameters][:AFSt]
+     Pch_Storage = m.ext[:parameters][:Pch_Storage]
+     Pdis_Storage = m.ext[:parameters][:Pdis_Storage]
+     Emax_Storage = m.ext[:parameters][:Emax_Storage]
+     eff_ch = m.ext[:parameters][:eff_ch]
+     eff_dis = m.ext[:parameters][:eff_dis]
+     
  
          ### parameters of transmission lines
      IC_var_AC = m.ext[:parameters][:IC_var_AC]
@@ -277,25 +296,32 @@ Pkg.add("Images")
      varlac = m.ext[:variables][:varlac] = @variable(m, [la=L_ac], lower_bound=0, base_name="capacity of ac line") # Capacity of AC line [MW]
      varldc = m.ext[:variables][:varldc] = @variable(m, [ld=L_dc], lower_bound=0, base_name="capacity of dc line") # Capacity of DC line [MW]
  
-     # variable for storage
-     g_PtH = m.ext[:variables][:g_PtH] = @variable(m, [j=J,n=N], lower_bound=0, base_name="Power to Hydrogen") # Power used to produce Hydrogen at time j in node n [MW]
-     g_OCGT = m.ext[:variables][:g_OCGT] = @variable(m, [j=J,n=N], lower_bound=0, base_name="Hydrogen to Power") # Hydrogen to generate Power at time j in node n [MW]
-     cap_PtH = m.ext[:variables][:cap_PtH] = @variable(m, [n=N], lower_bound=0, base_name="capacity of PtH unit") # Capacity of PtH unit in node n[MW]
-     cap_OCGT = m.ext[:variables][:cap_OCGT] = @variable(m, [n=N], lower_bound=0, base_name="capacity of OCGT unit") # Capacity of OCGT unit in node n[MW]
+    #  # variable for storage
+    #  g_PtH = m.ext[:variables][:g_PtH] = @variable(m, [j=J,n=N], lower_bound=0, base_name="Power to Hydrogen") # Power used to produce Hydrogen at time j in node n [MW]
+    #  g_OCGT = m.ext[:variables][:g_OCGT] = @variable(m, [j=J,n=N], lower_bound=0, base_name="Hydrogen to Power") # Hydrogen to generate Power at time j in node n [MW]
+    #  cap_PtH = m.ext[:variables][:cap_PtH] = @variable(m, [n=N], lower_bound=0, base_name="capacity of PtH unit") # Capacity of PtH unit in node n[MW]
+    #  cap_OCGT = m.ext[:variables][:cap_OCGT] = @variable(m, [n=N], lower_bound=0, base_name="capacity of OCGT unit") # Capacity of OCGT unit in node n[MW]
  
+     # variable for storage
+     c =  m.ext[:variables][:c] = @variable(m, [i=S,j=J,n=N], lower_bound=0, upper_bound= Pch_Storage[n][i], base_name="charging")
+     d =  m.ext[:variables][:d] = @variable(m, [i=S,j=J,n=N], lower_bound=0, upper_bound= Pdis_Storage[n][i], base_name="discharging")
+     e =  m.ext[:variables][:e] = @variable(m, [i=S,j=J,n=N], lower_bound=0, upper_bound= Emax_Storage[n][i], base_name="SOC")
+
      #alphaCO2 = m.ext[:variables][:alphaCO2] = @variable(m, lower_bound=0, base_name="carbon price") # Carbon price [EUR]
  
- 
      # Objective
-     obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in IV, n in N) + sum(VC[i]*g[i,j,n] for i in ITOT, j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N)) + sum(hurdle_cost*pl[j,l] for j in J, l in L)
-
+     obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in IV, n in N) + sum(VC[i]*g[i,j,n] for i in ITOT, j in J, n in N) + sum(VCS[i]*(d[i,j,n]+c[i,j,n]) for i in S, j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N)) + sum(hurdle_cost*pl[j,l] for j in J, l in L)
+     
+     #obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in IV, n in N) + sum(VC[i]*g[i,j,n] for i in ITOT, j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N)) + sum(hurdle_cost*pl[j,l] for j in J, l in L)
      #obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in I, n in N) + sum(ICS["PtH"]*cap_PtH[n] for n in N) + sum(ICS["OCGT_H"]*cap_OCGT[n] for n in N) + sum(VC[i]*g[i,j,n] for i in I, j in J, n in N) + sum(VCS["PtH"]*g_PtH[j,n] for j in J, n in N) + sum(VCS["OCGT_H"]*g_OCGT[j,n] for j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N)) + sum(hurdle_cost*pl[j,l] for j in J, l in L)
      #obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in I, n in N) + sum(ICS["PtH"]*cap_PtH[n] for n in N) + sum(ICS["OCGT_H"]*cap_OCGT[n] for n in N) + sum(IC_var_AC[find_line_number(network["AC_Lines"], la)]*varlac[la] for la in L_ac) + sum(IC_var_DC[find_line_number(network["DC_Lines"], ld)]*varldc[ld] for ld in L_dc) + sum(VC[i]*g[i,j,n] for i in I, j in J, n in N) + sum(VCS["PtH"]*g_PtH[j,n] for j in J, n in N) + sum(VCS["OCGT_H"]*g_OCGT[j,n] for j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N))
      #obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in I, n in N)  + sum(IC_var_AC[find_line_number(network["AC_Lines"], la)]*varlac[la] for la in L_ac) + sum(IC_var_DC[find_line_number(network["DC_Lines"], ld)]*varldc[ld] for ld in L_dc) + sum((FC[i]*g[i,j,n] + CO2[i]*alphaCO2*g[i,j,n]) for i in I, j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N))
  
- 
+      
      # Constraints
-     con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in ITOT) + sum(pl[j,l] for l in L if l[1] == n; init=0)  >= D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0)) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
+     con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in ITOT) + sum(d[i,j,n] for i in S) - sum(c[i,j,n] for i in S) + sum(pl[j,l] for l in L if l[1] == n; init=0)  >= D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0)) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
+
+     #con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in ITOT) + sum(pl[j,l] for l in L if l[1] == n; init=0)  >= D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0)) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
      #con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in I) + sum(pl[j,l] for l in L if l[1] == n; init=0) + sum(g_OCGT[j,n])  >= D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0) + sum(g_PtH[j,n])) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
      con_LoL = m.ext[:constraints][:con_LoL] = @constraint(m, [j=J,n=N], 0 <= ens[j,n] <= D[Symbol(n)][j]) # Loss of Load constraint
      #con_PFap_ac = m.ext[:constraints][:con_PFap_ac] = @constraint(m, [j=J,la=L_ac], pl[j,la] == Bl_ac * network["AC_Lines"]["AC_$(find_line_number(network["AC_Lines"], la))"]["Length"] * (θ[j,la[1]] - θ[j,la[2]]) * 400 * 400) # 'DC' Power Flow Approximation [MW] # θ should have a node as argument but l[x] is a node # TAKE LINE VOLTAGE VALUE AS 400kV
@@ -325,9 +351,11 @@ Pkg.add("Images")
      
      #con_SB = m.ext[:constraints][:con_SB] = @constraint(m, sum(g_PtH[j,n] for j in 1:timestep(aggregate_3h), n in N) == sum(g_OCGT[j,n] for j in 1:timestep(aggregate_3h), n in N)) # Yearly Storage Balance over whole EU 
 
+     # Add storage model with cyclic boundary conditions
+     con_SB1 = m.ext[:constraints][:con_SB1] = @constraint(m, [i=S,j=J[2:end-1],n=N], e[i,j+1,n] - e[i,j,n] == eff_ch[i]*c[i,j,n] - (d[i,j,n]/eff_dis[i]))
+     con_SB_begin = m.ext[:constraints][:con_SB_begin] = @constraint(m, [i=S,j=J[1],n=N], e[i,j+1,n] - (Emax_Storage[n][i]) == eff_ch[i]*c[i,j,n] - (d[i,j,n]/eff_dis[i]))
+     con_SB_end = m.ext[:constraints][:con_SB_end] = @constraint(m, [i=S,j=J[end],n=N], (Emax_Storage[n][i]) - e[i,j,n] == eff_ch[i]*c[i,j,n] - (d[i,j,n]/eff_dis[i]))
      
- 
- 
  
  end
  
@@ -355,8 +383,8 @@ Pkg.add("Images")
     end
     return country_capacity
 end
-countries_sum = ["ES", "FR", "DE", "BE", "UK", "NL", "DK", "NO", "SE", "FI", "IE", "CH", "AT", "IT", "PT"]
-calculate_country_capacity(Matrix(value.(m.ext[:variables][:cap])), countries_sum, 0.2)
+#countries_sum = ["ES", "FR", "DE", "BE", "UK", "NL", "DK", "NO", "SE", "FI", "IE", "CH", "AT", "IT", "PT"]
+#calculate_country_capacity(Matrix(value.(m.ext[:variables][:cap])), countries_sum, 0.2)
 
  ## Step 5: Visualization
  
@@ -372,16 +400,16 @@ calculate_country_capacity(Matrix(value.(m.ext[:variables][:cap])), countries_su
 
  
  
- gen_dict_abs_year = get_generators_capacity_storage_years(m, I, N, S, year)
+ #gen_dict_abs_year = get_generators_capacity_storage_years(m, I, N, S, year)
  #gen_dict_abs = get_generators_capacity_storage(m, I, N, S)
- gen_dict_abs = get_generators_capacity_storage_fixed_network(m, ITOT, IV, ID, N)
- gen_dict_rel = get_generators_capacity_storage_relative(m, I, N, S)
+ gen_dict_abs = get_generators_capacity_storage_fixed_network(m, ITOT, IV, ID, S, N)
+ #gen_dict_rel = get_generators_capacity_storage_relative(m, I, N, S)
  data_matrix_abs = matrix_generators_data(gen_dict_abs)
- data_matrix_rel = matrix_generators_data(gen_dict_rel)
+ #data_matrix_rel = matrix_generators_data(gen_dict_rel)
  nodes = collect(keys(gen_dict_abs))
  generation_abs = plot_generator_capacities_new(gen_dict_abs, Generator_colors_dict, "Installed Generation & Storage Capacity (GW)")
  #generation_abs = plot_generator_capacities(data_matrix_abs, nodes, Generator_colors_storage, Generator_labels_storage, "Installed Generation & Storage Capacity (GW)")
- generation_rel = plot_generator_capacities(data_matrix_rel, nodes, Generator_colors_storage, Generator_labels_storage, "Installed Generation & Storage Capacity (%)")
+ #generation_rel = plot_generator_capacities(data_matrix_rel, nodes, Generator_colors_storage, Generator_labels_storage, "Installed Generation & Storage Capacity (%)")
  
  trans_ac_dict = get_ac_transmission_capacity_fixed_network(m, L_ac)
  trans_dc_dict = get_dc_transmission_capacity_fixed_network(m, L_dc)

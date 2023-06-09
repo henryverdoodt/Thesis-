@@ -34,15 +34,32 @@ function get_generators_capacity_storage(m::Model, I::Vector{String}, N::Vector{
     return gen_dict
 end
 
-function get_generators_capacity_storage_fixed_network(m::Model, I::Vector{String}, IV::Vector{String}, ID::Vector{String}, N::Vector{String})
+# function get_generators_capacity_storage_fixed_network(m::Model, I::Vector{String}, IV::Vector{String}, ID::Vector{String}, N::Vector{String})
+#     gen_dict = Dict{String, Dict{String, Float64}}()  
+#     for node in N
+#         gen_dict[node] = Dict((gen => 0.0 for gen in I)...)
+#         for unit in IV
+#             gen_dict[node][unit] = value.(m.ext[:variables][:cap][unit, node])
+#         end
+#         for unit in ID
+#             gen_dict[node][unit] = value.(m.ext[:parameters][:cap_exist][node][unit])
+#         end
+#     end
+#     return gen_dict
+# end
+
+function get_generators_capacity_storage_fixed_network(m::Model, I::Vector{String}, IV::Vector{String}, ID::Vector{String}, S::Vector{String}, N::Vector{String})
     gen_dict = Dict{String, Dict{String, Float64}}()  
     for node in N
-        gen_dict[node] = Dict((gen => 0.0 for gen in I)...)
+        gen_dict[node] = Dict((gen => 0.0 for gen in cat(I, S, dims=1))...)
         for unit in IV
             gen_dict[node][unit] = value.(m.ext[:variables][:cap][unit, node])
         end
         for unit in ID
             gen_dict[node][unit] = value.(m.ext[:parameters][:cap_exist][node][unit])
+        end
+        for unit in S
+            gen_dict[node][unit] = value.(m.ext[:parameters][:Pdis_Storage][node][unit])
         end
     end
     return gen_dict
@@ -129,8 +146,8 @@ end
 Generator_colors = [:green, :blue, :orange, :lightblue, :purple, :gold, :red, :gray]    # [:green, :blue, :lightblue, :gold]  
 Generator_labels = ["Biomass" "WindOffshore" "CCGT_new" "WindOnshore" "Nuclear" "Solar" "OCGT" "ICE"]   # ["Biomass" "WindOffshore" "WindOnshore" "Solar"]  
 
-Generator_colors_storage = [:green, :blue, :orange, :magenta, :lightblue, :purple, :gold, :red, :gray, :cyan, :brown, :black, :lime, :teal]    # [:green, :blue, :lightblue, :gold]  
-Generator_labels_storage = ["Biomass" "WindOffshore" "CCGT_new" "OCGT_H" "WindOnshore" "Nuclear" "Solar" "OCGT" "ICE" "PtH" "SPP_lignite" "SPP_coal" "Biofuel" "Hydro_RoR"]   # ["Biomass" "WindOffshore" "WindOnshore" "Solar"]
+Generator_colors_storage = [:green, :blue, :orange, :magenta, :lightblue, :purple, :gold, :red, :gray, :cyan, :brown, :black, :lime, :teal, :lightyellow, :aqua, :seagreen, :darkgreen, :pink]    # [:green, :blue, :lightblue, :gold]  
+Generator_labels_storage = ["Biomass" "WindOffshore" "CCGT_new" "OCGT_H" "WindOnshore" "Nuclear" "Solar" "OCGT" "ICE" "PtH" "SPP_lignite" "SPP_coal" "Biofuel" "Hydro_RoR" "Hydro_Pon" "Hydro_Res" "PHS_OL" "PHS_CL" "Batteries"]   # ["Biomass" "WindOffshore" "WindOnshore" "Solar"]
 Generator_colors_dict = Dict(zip(Generator_labels_storage, Generator_colors_storage))
 
 function plot_generator_capacities(data_matrix::Matrix{Float64}, nodes::Vector{String}, Generator_colors::Vector{Symbol}, Generator_labels::Matrix{String}, title::String)

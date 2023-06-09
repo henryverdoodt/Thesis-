@@ -399,7 +399,7 @@ PowerSector:
   emissions: 0 # Mton/TWh
   efficiency: 1 # not used (Inital value was 0 but change it to 1 to use it in the formulas)
   gMAX: 10 # MW
-  OC: 1748 # MEUR/GW
+  OC: 1118 #1748 # MEUR/GW
   Legcap_2019: 10.6 # GW
   Legcap_2020: 13.2 # GW
   Legcap_2021: 14.12 # GW
@@ -438,7 +438,7 @@ PowerSector:
   AF: 0.70 # -      #assume between 0.20 and 0.95
 
 
-Storage:
+Storage_H2:
  OCGT_H:
   fuelCosts: 80 # MEUR/TWh - to be linked to price of natural gas - used P_2023
   efficiency: 0.4 # NG -> electricity  
@@ -454,3 +454,30 @@ Storage:
   OC: 650 # MEUR/GW (electrolysis)
   Lifetime: 15 # years  (electrolysis)
   AF: 1 # -  own calculation
+
+Storage: 
+ Hydro_Pon:
+  VC: 5 #EUR/MWh
+  AF: 0.98 # - # https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2015/IRENA-ETSAP_Tech_Brief_E06_Hydropower.pdf
+  eff_ch: 1 # - #not used
+  eff_dis: 0.9 # - # https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2015/IRENA-ETSAP_Tech_Brief_E06_Hydropower.pdf
+ Hydro_Res:
+  VC: 5 #EUR/MWh
+  AF: 0.98 # -
+  eff_ch: 1 # - #not used
+  eff_dis: 0.9 # -
+ PHS_OL:
+  VC: 5 #EUR/MWh
+  AF: 0.98 # -
+  eff_ch: 0.9 # -
+  eff_dis: 0.9 # -
+ PHS_CL:
+  VC: 5 #EUR/MWh
+  AF: 0.98 # -
+  eff_ch: 0.9 # -
+  eff_dis: 0.9 # -
+ Batteries:
+  VC: 0 #EUR/MWh    # file:///Users/henryverdoodt/Downloads/An_Evaluation_of_Energy_Storage_Cost_and_Performan.pdf 
+  AF: 1 # -      #assume
+  eff_ch: 0.98 # - 
+  eff_dis: 0.98 # -
