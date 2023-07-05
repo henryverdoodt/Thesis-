@@ -23,6 +23,9 @@ Pkg.add("Images")
 
  using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyChaos, InteractiveUtils
  using StatsPlots, Images
+
+ # Start the timer
+ t_start = time()
  
  # Include Files
  include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/REFORMAT_DATA.jl")
@@ -31,17 +34,20 @@ Pkg.add("Images")
  
  ############################ DATA PARAMETERS ############################
  countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
- y = 2009.0    # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
- year = 1986
- representative_years = [1995.0, 2008.0, 2009.0]
- weights = [0.233, 0.367, 0.4]
- aggregate_3h = true
+
+ # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
+ year = 1986  # year weather data
+ representative_years = [1995.0, 2008.0, 2009.0] # year demand 
+ weights = [0.233, 0.367, 0.4] # weights demand years
+ aggregate_3h = true # aggregate 1h timestep data to 3h timestep data
  
+ # Countries where demand/solar/windon/windoff data exist
  countries_demand = countries_demand_entso       
  countries_solar = countries_solar_coper_CNRM         # countries_solar_coper_cnrm        # countries_solar_entso 
  countries_windon = countries_windon_coper_CNRM       # countries_windon_coper_cnrm       # countries_windon_entso 
  countries_windoff = countries_windoff_coper_CNRM     # countries_windoff_coper_cnrm      # countries_windoff_entso
  
+ #Countries from domain where demand data exist (not IT and PT)
  countries_dem = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "AT", "SE"]
  
  # Read the CSV file into a DataFrame
@@ -50,7 +56,7 @@ Pkg.add("Images")
  dem = reformat_entso_demand(demand_entso, countries_dem, countries_demand_entso, representative_years, weights, aggregate_3h)
  dem_PT_IT = reformat_demand_PT_IT(new_demand_PT_IT, aggregate_3h)
  dem = hcat(dem, dem_PT_IT)
- 
+
  #=
  ## REF CASE CF
  sol = reformat_entso_solar(solar_entso, countries, countries_solar_entso, representative_years, weights, aggregate_3h)
@@ -86,8 +92,8 @@ Pkg.add("Images")
  # Step 2a: create sets
  function define_sets!(m::Model, data::Dict, network::Dict)
      m.ext[:sets] = Dict()
-     J = m.ext[:sets][:J] = 1:timestep(aggregate_3h) # Timesteps  # 2920  # 8760
-     I = m.ext[:sets][:I] = [id for id in keys(data["PowerSector"]) if id ∉ ["CCGT_old"]] # Generators per type "SPP_lignite", "SPP_coal",
+     J = m.ext[:sets][:J] = 1:timestep(aggregate_3h) # Timesteps: 2920  or  8760
+     I = m.ext[:sets][:I] = [id for id in keys(data["PowerSector"]) if id ∉ ["CCGT_old", "Biomass", "CCGT_new"]] # Generators per type 
      L_ac = m.ext[:sets][:AC_Lines] = [network["AC_Lines"]["AC_$(i)"]["Connection"] for i in 1:length(keys(network["AC_Lines"]))] # AC Lines
      L_dc = m.ext[:sets][:DC_Lines] = [network["DC_Lines"]["DC_$(i)"]["Connection"] for i in 1:length(keys(network["DC_Lines"]))] # DC Lines
      L = m.ext[:sets][:Lines] = union(m.ext[:sets][:AC_Lines],m.ext[:sets][:DC_Lines]) # Lines
@@ -105,7 +111,6 @@ Pkg.add("Images")
      I = m.ext[:sets][:I]
      J = m.ext[:sets][:J]
      N = m.ext[:sets][:Nodes]
- 
      S = m.ext[:sets][:S]
  
      # create dictionary to store time series
@@ -148,10 +153,10 @@ Pkg.add("Images")
      disc_r = m.ext[:parameters][:disc_r] = data["General"]["discount_rate"] # -, discount rate
      VOLL = m.ext[:parameters][:VOLL] = data["General"]["valueOfLostLoad"] # EUR/MWh, VOLL
      hurdle_cost = m.ext[:parameters][:hurdle_cost] = data["General"]["hurdle_cost"] # EUR/MWh, hurdle_cost
-     alphaCO2 = m.ext[:parameters][:alphaCO2] = data["ETS"]["P_calibration"] # €/ton, alphaCO2
-     Bl_ac = m.ext[:parameters][:Bl_ac] = network["Bl_ac"]*10^(-6) # S/km, Susceptance of AC line 
-     Bl_dc =  m.ext[:parameters][:Bl_dc] = network["Bl_dc"]*10^(-6) # S/km, Susceptance of DC line  
-     Bl = m.ext[:parameters][:Bl] = cat(Bl_ac, Bl_dc, dims=1) # S/km, Susceptance of All line [USE cat() OR union() function??]
+     alphaCO2 = m.ext[:parameters][:alphaCO2] = data["ETS"]["P_calibration"] # EUR/ton, alphaCO2
+     #Bl_ac = m.ext[:parameters][:Bl_ac] = network["Bl_ac"]*10^(-6) # S/km, Susceptance of AC line 
+     #Bl_dc =  m.ext[:parameters][:Bl_dc] = network["Bl_dc"]*10^(-6) # S/km, Susceptance of DC line  
+     #Bl = m.ext[:parameters][:Bl] = cat(Bl_ac, Bl_dc, dims=1) # S/km, Susceptance of All line [USE cat() OR union() function??]
      cap_exist = m.ext[:parameters][:cap_exist] = Dict(n => Dict(i => network["Existing_Capacity"][n][i] for i in IED) for n in N)
      Emax_Storage = m.ext[:parameters][:Emax_Storage] = Dict(n => Dict(i => network["Storage_Existing_Capacity"][n][i]["Emax"] for i in S) for n in N)
      Pch_Storage = m.ext[:parameters][:Pch_Storage] = Dict(n => Dict(i => network["Storage_Existing_Capacity"][n][i]["P_ch"] for i in S) for n in N)
@@ -160,12 +165,12 @@ Pkg.add("Images")
 
      # parameters of generators per unit
      d = data["PowerSector"]
-     betaD = m.ext[:parameters][:betaD] = Dict(i => (d[SubString(i,1:length(i))]["fuelCosts"]/d[SubString(i,1:length(i))]["efficiency"]) for i in I)  # EUR/MWh, Cost of generation of unit i
-     deltaD = m.ext[:parameters][:deltaD] = Dict(i => (d[SubString(i,1:length(i))]["emissions"]/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # ton/MWh, Emissions of generation of unit i
-     GMAX = m.ext[:parameters][:GMAX] = Dict(i => d[SubString(i,1:length(i))]["gMAX"] for i in I) # MW, Maximum Power Output of one generation unit
+     #betaD = m.ext[:parameters][:betaD] = Dict(i => (d[SubString(i,1:length(i))]["fuelCosts"]/d[SubString(i,1:length(i))]["efficiency"]) for i in I)  # EUR/MWh, Cost of generation of unit i
+     #deltaD = m.ext[:parameters][:deltaD] = Dict(i => (d[SubString(i,1:length(i))]["emissions"]/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # ton/MWh, Emissions of generation of unit i
+     #GMAX = m.ext[:parameters][:GMAX] = Dict(i => d[SubString(i,1:length(i))]["gMAX"] for i in I) # MW, Maximum Power Output of one generation unit
      VC = m.ext[:parameters][:VC] = Dict(i => ((d[SubString(i,1:length(i))]["fuelCosts"] + d[SubString(i,1:length(i))]["emissions"]*alphaCO2)/d[SubString(i,1:length(i))]["efficiency"]) for i in I) # EUR/MWh, Variable Cost of unit i
-     OC = m.ext[:parameters][:OC] = Dict(i => 10^3*d[SubString(i,1:length(i))]["OC"] for i in I) # EUR/MW, Overnight investment cost of a unit
-     LifeT = m.ext[:parameters][:LifeT] = Dict(i => d[SubString(i,1:length(i))]["Lifetime"] for i in I) # years, Lifetime of Asset
+     #OC = m.ext[:parameters][:OC] = Dict(i => 10^3*d[SubString(i,1:length(i))]["OC"] for i in I) # EUR/MW, Overnight investment cost of a unit
+     #LifeT = m.ext[:parameters][:LifeT] = Dict(i => d[SubString(i,1:length(i))]["Lifetime"] for i in I) # years, Lifetime of Asset
      IC = m.ext[:parameters][:IC] = Dict(i => 10^3*(d[SubString(i,1:length(i))]["OC"]*disc_r)/(1-(1/(1+disc_r)^(d[SubString(i,1:length(i))]["Lifetime"]))) for i in I) # EUR/MWy, Investment Cost in generation unit i
      AF = m.ext[:parameters][:AF] = Dict(i => d[SubString(i,1:length(i))]["AF"] for i in I) # Availability facor of a generator
  
@@ -179,7 +184,7 @@ Pkg.add("Images")
      
      # parameters of Storage per unit
      dS = data["Storage"]
-     VCS = m.ext[:parameters][:VCS] = Dict(i => (dS[SubString(i,1:length(i))]["VC"]) for i in S)  # EUR/MWh, Cost of storage of unit i
+     VCS = m.ext[:parameters][:VCS] = Dict(i => (dS[SubString(i,1:length(i))]["VC"]) for i in S)  # EUR/MWh, Variable Cost of storage of unit i
      AFSt = m.ext[:parameters][:AFSt] = Dict(i => dS[SubString(i,1:length(i))]["AF"] for i in S) # Availability facor of Storage technology
      eff_ch = m.ext[:parameters][:eff_ch] = Dict(i => dS[SubString(i,1:length(i))]["eff_ch"] for i in S) # Availability facor of Storage technology
      eff_dis = m.ext[:parameters][:eff_dis] = Dict(i => dS[SubString(i,1:length(i))]["eff_dis"] for i in S) # Availability facor of Storage technology
@@ -190,17 +195,17 @@ Pkg.add("Images")
  
      # parameters of transmission lines AC
      Fl_MAX_AC = m.ext[:parameters][:Fl_MAX_AC] = [network["AC_Lines"]["AC_$(i)"]["Capacity_2030"] for i in 1:length(keys(network["AC_Lines"]))] # MW, AC Lines
-     L_length_AC = m.ext[:parameters][:L_length_AC] = [network["AC_Lines"]["AC_$(i)"]["Length"] for i in 1:length(keys(network["AC_Lines"]))] # km, Length of AC transmission line
-     L_price_AC = m.ext[:parameters][:L_price_AC] = [network["AC_Lines"]["AC_$(i)"]["Price"] for i in 1:length(keys(network["AC_Lines"]))] # EUR/km.MW, Price of AC line per unit length
-     OC_var_AC = m.ext[:parameters][:OC_var_AC] = [network["AC_Lines"]["AC_$(i)"]["Price"] * network["AC_Lines"]["AC_$(i)"]["Length"] for i in 1:length(keys(network["AC_Lines"]))] # EUR/MW, Investment Cost for AC Transmission line
-     IC_var_AC = m.ext[:parameters][:IC_var_AC] = [(network["AC_Lines"]["AC_$(i)"]["Price"] * network["AC_Lines"]["AC_$(i)"]["Length"]*disc_r)/(1-(1/(1+disc_r)^(network["Lifetime_ac"]))) for i in 1:length(keys(network["AC_Lines"]))] # EUR/MWy, Investment Cost of AC line
+     #L_length_AC = m.ext[:parameters][:L_length_AC] = [network["AC_Lines"]["AC_$(i)"]["Length"] for i in 1:length(keys(network["AC_Lines"]))] # km, Length of AC transmission line
+     #L_price_AC = m.ext[:parameters][:L_price_AC] = [network["AC_Lines"]["AC_$(i)"]["Price"] for i in 1:length(keys(network["AC_Lines"]))] # EUR/km.MW, Price of AC line per unit length
+     #OC_var_AC = m.ext[:parameters][:OC_var_AC] = [network["AC_Lines"]["AC_$(i)"]["Price"] * network["AC_Lines"]["AC_$(i)"]["Length"] for i in 1:length(keys(network["AC_Lines"]))] # EUR/MW, Investment Cost for AC Transmission line
+     #IC_var_AC = m.ext[:parameters][:IC_var_AC] = [(network["AC_Lines"]["AC_$(i)"]["Price"] * network["AC_Lines"]["AC_$(i)"]["Length"]*disc_r)/(1-(1/(1+disc_r)^(network["Lifetime_ac"]))) for i in 1:length(keys(network["AC_Lines"]))] # EUR/MWy, Investment Cost of AC line
  
      # parameters of transmission lines DC 
      Fl_MAX_DC = m.ext[:parameters][:Fl_MAX_DC] = [network["DC_Lines"]["DC_$(i)"]["Capacity_2030"] for i in 1:length(keys(network["DC_Lines"]))] # MW, DC Lines
-     L_length_DC = m.ext[:parameters][:L_length_DC] = [network["DC_Lines"]["DC_$(i)"]["Length"] for i in 1:length(keys(network["DC_Lines"]))] # km, Length of DC transmission line
-     L_price_DC = m.ext[:parameters][:L_price_DC] = [network["DC_Lines"]["DC_$(i)"]["Price"] for i in 1:length(keys(network["DC_Lines"]))] # EUR/km.MW, Price of DC line per unit length
-     OC_var_DC = m.ext[:parameters][:OC_var_DC] = [network["DC_Lines"]["DC_$(i)"]["Price"] * network["DC_Lines"]["DC_$(i)"]["Length"] for i in 1:length(keys(network["DC_Lines"]))] # EUR/MW, Investment Cost for DC Transmission line
-     IC_var_DC = m.ext[:parameters][:IC_var_DC] = [(network["DC_Lines"]["DC_$(i)"]["Price"] * network["DC_Lines"]["DC_$(i)"]["Length"]*disc_r)/(1-(1/(1+disc_r)^(network["Lifetime_dc"]))) for i in 1:length(keys(network["DC_Lines"]))] # EUR/MWy, Investment Cost of DC line
+     #L_length_DC = m.ext[:parameters][:L_length_DC] = [network["DC_Lines"]["DC_$(i)"]["Length"] for i in 1:length(keys(network["DC_Lines"]))] # km, Length of DC transmission line
+     #L_price_DC = m.ext[:parameters][:L_price_DC] = [network["DC_Lines"]["DC_$(i)"]["Price"] for i in 1:length(keys(network["DC_Lines"]))] # EUR/km.MW, Price of DC line per unit length
+     #OC_var_DC = m.ext[:parameters][:OC_var_DC] = [network["DC_Lines"]["DC_$(i)"]["Price"] * network["DC_Lines"]["DC_$(i)"]["Length"] for i in 1:length(keys(network["DC_Lines"]))] # EUR/MW, Investment Cost for DC Transmission line
+     #IC_var_DC = m.ext[:parameters][:IC_var_DC] = [(network["DC_Lines"]["DC_$(i)"]["Price"] * network["DC_Lines"]["DC_$(i)"]["Length"]*disc_r)/(1-(1/(1+disc_r)^(network["Lifetime_dc"]))) for i in 1:length(keys(network["DC_Lines"]))] # EUR/MWy, Investment Cost of DC line
      Fl_MAX = m.ext[:parameters][:Fl_MAX] = cat(Fl_MAX_AC, Fl_MAX_DC, dims=1) # MW, All Lines, Maximum capacity [USE cat() OR union() function??]
      # return model
      return m
@@ -208,9 +213,11 @@ Pkg.add("Images")
  
  # call functions
  define_sets!(m, data, network)  
+ println("SETS Done")
  process_time_series_data!(m, dem, sol, won, woff)   # process_time_series_data!(m, dem_3h, sol_3h, won_3h, woff_3h)  # process_time_series_data!(m, dem, sol, won, woff) 
+ println("TIME SERIES Done")
  process_parameters!(m, data, network)
- 
+ println("PARAMETERS Done")
  
  function find_line_number(network::Dict, countries::Vector)
      for (name, line) in network
@@ -237,7 +244,6 @@ Pkg.add("Images")
      I_CO2 = ["CCGT_new", "OCGT", "ICE"] # Generators units emitting CO2
      ID = ["Nuclear", "SPP_lignite", "SPP_coal", "OCGT", "ICE", "Biofuel", "Hydro_RoR"]  # ID = ["Nuclear", "SPP_lignite", "SPP_coal", "CCGT_old", "CCGT_new", "OCGT", "ICE", "Biomass"]; As we assume Greenfield method we only take the new tech. and dont take coal into account
      IV = ["Solar", "WindOnshore", "WindOffshore"]
-     IP = ["Solar", "WindOnshore", "WindOffshore", "Biomass"]
      ITOT = ["Solar", "WindOnshore", "WindOffshore", "Nuclear", "SPP_lignite", "SPP_coal", "OCGT", "ICE", "Biofuel", "Hydro_RoR"]
      L_ac = m.ext[:sets][:AC_Lines] # AC Lines
      L_dc = m.ext[:sets][:DC_Lines] # DC Lines
@@ -256,9 +262,9 @@ Pkg.add("Images")
          ### general parameters
      VOLL = m.ext[:parameters][:VOLL] 
      hurdle_cost = m.ext[:parameters][:hurdle_cost] 
-     Bl_ac = m.ext[:parameters][:Bl_ac] 
-     Bl_dc =  m.ext[:parameters][:Bl_dc] 
-     Bl = m.ext[:parameters][:Bl]
+     #Bl_ac = m.ext[:parameters][:Bl_ac] 
+     #Bl_dc =  m.ext[:parameters][:Bl_dc] 
+     #Bl = m.ext[:parameters][:Bl]
      cap_exist = m.ext[:parameters][:cap_exist]
      
          ### parameters of generators per unit
@@ -281,8 +287,8 @@ Pkg.add("Images")
      
  
          ### parameters of transmission lines
-     IC_var_AC = m.ext[:parameters][:IC_var_AC]
-     IC_var_DC = m.ext[:parameters][:IC_var_DC] 
+     #IC_var_AC = m.ext[:parameters][:IC_var_AC]
+     #IC_var_DC = m.ext[:parameters][:IC_var_DC] 
      Fl_MAX_AC = m.ext[:parameters][:Fl_MAX_AC]
      Fl_MAX_DC = m.ext[:parameters][:Fl_MAX_DC]
     
@@ -292,9 +298,9 @@ Pkg.add("Images")
      cap = m.ext[:variables][:cap] = @variable(m, [i=I,n=N], lower_bound=0, base_name="capacity of generating unit") # Capacity of candidate generating unit i in node n[MW]
      ens = m.ext[:variables][:ens] = @variable(m, [j=J,n=N], lower_bound=0, base_name="energy not served") # Energy Not Served at time j in node n [MWh] (OR Should I use Load shed of demand instead in MW?)
      pl = m.ext[:variables][:pl] = @variable(m, [j=J,l=L], lower_bound=0, base_name="power flow in transmission") # Power flow through Transmission Line l at time j [MW]
-     θ = m.ext[:variables][:θ] = @variable(m, [j=J,n=N], lower_bound=0, base_name="voltage angle") # Voltage angle at node n and time j [rad]
-     varlac = m.ext[:variables][:varlac] = @variable(m, [la=L_ac], lower_bound=0, base_name="capacity of ac line") # Capacity of AC line [MW]
-     varldc = m.ext[:variables][:varldc] = @variable(m, [ld=L_dc], lower_bound=0, base_name="capacity of dc line") # Capacity of DC line [MW]
+     #θ = m.ext[:variables][:θ] = @variable(m, [j=J,n=N], lower_bound=0, base_name="voltage angle") # Voltage angle at node n and time j [rad]
+     #varlac = m.ext[:variables][:varlac] = @variable(m, [la=L_ac], lower_bound=0, base_name="capacity of ac line") # Capacity of AC line [MW]
+     #varldc = m.ext[:variables][:varldc] = @variable(m, [ld=L_dc], lower_bound=0, base_name="capacity of dc line") # Capacity of DC line [MW]
  
     #  # variable for storage
     #  g_PtH = m.ext[:variables][:g_PtH] = @variable(m, [j=J,n=N], lower_bound=0, base_name="Power to Hydrogen") # Power used to produce Hydrogen at time j in node n [MW]
@@ -303,9 +309,9 @@ Pkg.add("Images")
     #  cap_OCGT = m.ext[:variables][:cap_OCGT] = @variable(m, [n=N], lower_bound=0, base_name="capacity of OCGT unit") # Capacity of OCGT unit in node n[MW]
  
      # variable for storage
-     c =  m.ext[:variables][:c] = @variable(m, [i=S,j=J,n=N], lower_bound=0, upper_bound= Pch_Storage[n][i], base_name="charging")
-     d =  m.ext[:variables][:d] = @variable(m, [i=S,j=J,n=N], lower_bound=0, upper_bound= Pdis_Storage[n][i], base_name="discharging")
-     e =  m.ext[:variables][:e] = @variable(m, [i=S,j=J,n=N], lower_bound=0, upper_bound= Emax_Storage[n][i], base_name="SOC")
+     c = m.ext[:variables][:c] = @variable(m, [i=S,j=J,n=N], lower_bound=0, upper_bound= Pch_Storage[n][i], base_name="charging")
+     d = m.ext[:variables][:d] = @variable(m, [i=S,j=J,n=N], lower_bound=0, upper_bound= Pdis_Storage[n][i], base_name="discharging")
+     e = m.ext[:variables][:e] = @variable(m, [i=S,j=J,n=N], lower_bound=0, upper_bound= Emax_Storage[n][i], base_name="SOC")
 
      #alphaCO2 = m.ext[:variables][:alphaCO2] = @variable(m, lower_bound=0, base_name="carbon price") # Carbon price [EUR]
  
@@ -336,10 +342,12 @@ Pkg.add("Images")
      #con_DGl = m.ext[:constraints][:con_DGl] = @constraint(m, [i=ID, j=J, n=N], g[i,j,n] <= AF[i]*cap[i,n]) # Dispatchable generation limit
      con_SGl = m.ext[:constraints][:con_SGl] = @constraint(m, [i=["Solar"], j=J, n=N], g[i,j,n] <= AFS[Symbol(n)][j]*AF[i]*cap[i,n]) # Solar generation limit
      con_WONGl = m.ext[:constraints][:con_WONGl] = @constraint(m, [i=["WindOnshore"], j=J, n=N], g[i,j,n] <= AFWON[Symbol(n)][j]*AF[i]*cap[i,n]) # Windon generation limit
-     con_WOFFGl = m.ext[:constraints][:con_WOFFGl] = @constraint(m, [i=["WindOffshore"], j=J, n=intersect(countries, countries_windoff)], g[i,j,n] <= AFWOFF[Symbol(n)][j]*AF[i]*cap[i,n]) # Windoff generation limit
+     con_WOFFGl = m.ext[:constraints][:con_WOFFGl] = @constraint(m, [i=["WindOffshore"], j=J, n=intersect(countries, countries_windoff)], g[i,j,n] <= 1.2*AFWOFF[Symbol(n)][j]*AF[i]*cap[i,n]) # Windoff generation limit (assume hubheight at 150m --> factor 1.2)
      con_CWO_WOFF = m.ext[:constraints][:con_CWO_WOFF] = @constraint(m, [i=["WindOffshore"], j=J, n=setdiff(countries, countries_windoff)], g[i,j,n] == 0.0) # No wind offshore in these countries
  
-     con_alphaCO2 = m.ext[:constraints][:con_alphaCO2] = @constraint(m, [i=I_CO2, j=J, n=N], g[i,j,n] == 0.0 )
+     #con_alphaCO2 = m.ext[:constraints][:con_alphaCO2] = @constraint(m, [i=I_CO2, j=J, n=N], g[i,j,n] == 0.0)
+
+     #con_ENS = m.ext[:constraints][:con_ENS] = @constraint(m, (1 - (sum(ens[j,n] for j in J, n in N)/sum(D[Symbol(n)][j] for n in N, j in J))) >= 0.90) # Reliability percentage of Power system
  
      #con_PtH = m.ext[:constraints][:con_PtH] = @constraint(m, [j=J, n=N], g_PtH[j,n] <= AFSt["PtH"]*cap_PtH[n]) # PtH generation limit
      #con_OCGT = m.ext[:constraints][:con_OCGT] = @constraint(m, [j=J, n=N], g_OCGT[j,n] <= AFSt["OCGT_H"]*cap_OCGT[n]) # OCGT generation limit
@@ -353,17 +361,28 @@ Pkg.add("Images")
 
      # Add storage model with cyclic boundary conditions
      con_SB1 = m.ext[:constraints][:con_SB1] = @constraint(m, [i=S,j=J[2:end-1],n=N], e[i,j+1,n] - e[i,j,n] == eff_ch[i]*c[i,j,n] - (d[i,j,n]/eff_dis[i]))
-     con_SB_begin = m.ext[:constraints][:con_SB_begin] = @constraint(m, [i=S,j=J[1],n=N], e[i,j+1,n] - (Emax_Storage[n][i]) == eff_ch[i]*c[i,j,n] - (d[i,j,n]/eff_dis[i]))
-     con_SB_end = m.ext[:constraints][:con_SB_end] = @constraint(m, [i=S,j=J[end],n=N], (Emax_Storage[n][i]) - e[i,j,n] == eff_ch[i]*c[i,j,n] - (d[i,j,n]/eff_dis[i]))
-     
+     con_SB_init = m.ext[:constraints][:con_SB_init] = @constraint(m, [i=S,j=J[1],n=N], e[i,j,n] == (Emax_Storage[n][i]))
+     con_SB_end = m.ext[:constraints][:con_SB_end] = @constraint(m, [i=["Batteries", "PHS_OL", "PHS_CL"],j=J[end],n=N], e[i,j,n] == (Emax_Storage[n][i]))
+     #con_SB_end2 = m.ext[:constraints][:con_SB_end2] = @constraint(m, [i=["Hydro_Res", "Hydro_Pon"],j=J[end],n=N], e[i,j,n] == 0)
+     #con_SB_begin = m.ext[:constraints][:con_SB_begin] = @constraint(m, [i=S,j=J[1],n=N], e[i,j+1,n] - (Emax_Storage[n][i]) == eff_ch[i]*c[i,j,n] - (d[i,j,n]/eff_dis[i]))
+     #con_SB_end = m.ext[:constraints][:con_SB_end] = @constraint(m, [i=["Batteries", "PHS_OL", "PHS_CL"],j=J[end],n=N], (Emax_Storage[n][i]) - e[i,j,n] == eff_ch[i]*c[i,j,n] - (d[i,j,n]/eff_dis[i]))
+     #con_SB_end2 = m.ext[:constraints][:con_SB_end2] = @constraint(m, [i=["Hydro_Res", "Hydro_Pon"],j=J[end],n=N], 0 - e[i,j,n] == eff_ch[i]*c[i,j,n] - (d[i,j,n]/eff_dis[i])) # Final Energy in the Hydro Res and Hydro Pon has to be equal to zero
  
  end
- 
+
  # Build model
- build_model!(m)
+ println("Start BUILD MODEL")
+ @time build_model!(m)
+ println("BUILD MODEL Done")
  
  # Solve
  optimize!(m)
+
+ # Stop the timer and calculate elapsed time
+ elapsed_time = time() - t_start
+ println("Elapsed time: $elapsed_time seconds")
+
+
  # check termination status
  print(
      """
@@ -384,7 +403,7 @@ Pkg.add("Images")
     return country_capacity
 end
 #countries_sum = ["ES", "FR", "DE", "BE", "UK", "NL", "DK", "NO", "SE", "FI", "IE", "CH", "AT", "IT", "PT"]
-#calculate_country_capacity(Matrix(value.(m.ext[:variables][:cap])), countries_sum, 0.2)
+#calculate_country_capacity(Matrix(value.(m.ext[:variables][:cap])), countries_sum, 1.0)
 
  ## Step 5: Visualization
  
@@ -398,7 +417,7 @@ end
  ID = ["Nuclear", "SPP_lignite", "SPP_coal", "OCGT", "ICE", "Biofuel", "Hydro_RoR"]  
  ITOT = ["Solar", "WindOnshore", "WindOffshore", "Nuclear", "SPP_lignite", "SPP_coal", "OCGT", "ICE", "Biofuel", "Hydro_RoR"]
 
- 
+ plot_demand_2030 = plot_demand(dem) # plot demand national estimates 2030
  
  #gen_dict_abs_year = get_generators_capacity_storage_years(m, I, N, S, year)
  #gen_dict_abs = get_generators_capacity_storage(m, I, N, S)
@@ -411,6 +430,7 @@ end
  #generation_abs = plot_generator_capacities(data_matrix_abs, nodes, Generator_colors_storage, Generator_labels_storage, "Installed Generation & Storage Capacity (GW)")
  #generation_rel = plot_generator_capacities(data_matrix_rel, nodes, Generator_colors_storage, Generator_labels_storage, "Installed Generation & Storage Capacity (%)")
  
+ power_flow_histogram = plot_power_flow_histogram(["UK", "FR"])  # ["ES", "FR"] ["UK", "FR"] ["NO", "NL"] ["PT", "ES"] ["BE", "DE"] ["SE", "NO"]
  trans_ac_dict = get_ac_transmission_capacity_fixed_network(m, L_ac)
  trans_dc_dict = get_dc_transmission_capacity_fixed_network(m, L_dc)
  trans_dict = merge(get_ac_transmission_capacity_fixed_network(m, L_ac), get_dc_transmission_capacity_fixed_network(m, L_dc))
@@ -418,4 +438,8 @@ end
  transmission_map = plot_transmission_needed(trans_ac_dict, trans_dc_dict, countries_coord)
  
  plot(generation_abs, transmission_map, layout=(1,2), size=(1200,500))
- 
+
+
+
+
+

@@ -17,7 +17,7 @@ windoff_ENTSO_25_1986_2015_autumn_South_EU = np.loadtxt('/Users/henryverdoodt/Do
 windoff_ENTSO_25_1986_2015_summer_South_EU_3H = np.mean(windoff_ENTSO_25_1986_2015_summer_South_EU.reshape(-1, 3), axis=1); 
 windoff_ENTSO_25_1986_2015_summer_South_EU_3H = np.mean(windoff_ENTSO_25_1986_2015_summer_South_EU.reshape(-1, 3), axis=1); 
 windoff_ENTSO_25_1986_2015_spring_South_EU_3H = np.mean(windoff_ENTSO_25_1986_2015_spring_South_EU.reshape(-1, 3), axis=1); 
-windoff_ENTSO_25_1986_2015_summer_South_EU_3H = np.mean(windoff_ENTSO_25_1986_2015_summer_South_EU .reshape(-1, 3), axis=1); 
+windoff_ENTSO_25_1986_2015_summer_South_EU_3H = np.mean(windoff_ENTSO_25_1986_2015_summer_South_EU.reshape(-1, 3), axis=1); 
 windoff_ENTSO_25_1986_2015_autumn_South_EU_3H = np.mean(windoff_ENTSO_25_1986_2015_autumn_South_EU.reshape(-1, 3), axis=1); 
 
 windoff_CNRM_1979_2005_summer_South_EU = np.loadtxt('/Users/henryverdoodt/Documents/CODE/DATA/BOXPLOT/windoff_CNRM_1979_2005_summer_South_EU.csv', delimiter=',', skiprows=1); 

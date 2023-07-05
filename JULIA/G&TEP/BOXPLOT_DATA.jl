@@ -39,6 +39,8 @@ seasons_name = ["summer", "autumn", "winter", "spring"]
 North_EU = ["NO", "SE", "FI"]; South_EU = ["PT", "ES", "IT"]
 region = [North_EU, South_EU]
 region_name = ["North_EU", "South_EU"]
+countries_array = ["PT", "ES", "IT", "FR", "CH", "AT", "BE", "DE", "NL", "UK", "IE", "DK", "NO", "SE", "FI"]
+countries_array_woff = ["PT", "ES", "IT", "FR", "BE", "DE", "NL", "UK", "IE", "DK", "NO", "SE", "FI"]
 
 
 
@@ -75,6 +77,95 @@ function csv_boxplot_CF_Coper(data::DataFrame, data_name::String, BeginYear::Int
     end
 end
 
+function csv_boxplot_CF_Coper_countries_season(data::DataFrame, BeginYear::Int64, EndYear::Int64, Countries::Vector{String}, Season::Vector{String}, season_name::String)
+    rows1 = findall(row -> (BeginYear <= parse(Int, split(row, "-")[1]) <= EndYear), data[!, :Date])  
+    data_year = data[rows1, :]
+    data_season = data_year[findall(row -> split(row, "-")[2] in Set(Season), data_year[!, :Date]), :]
+    filtered_df = select(data_season, [Countries...])
+    for row in eachrow(filtered_df)
+        for (col, value) in pairs(row)
+            if isnan(value)
+                row[col] = 0.0
+            end
+        end
+    end
+    output_file = "/Users/henryverdoodt/Documents/CODE/DATA/BOXPLOT/CF_solar_HadGEM_$(BeginYear)_$(EndYear)_$(season_name).csv"
+    CSV.write(output_file, eachcol(filtered_df), header=names(filtered_df))
+    #return output_file
+end 
+csv_boxplot_CF_Coper_countries_season(solar_HadGEM, 2016, 2045, countries_array_woff, summer, "summer")
+
+function csv_boxplot_CF_Coper_countries_year(data::DataFrame, BeginYear::Int64, EndYear::Int64, Countries::Vector{String})
+    rows1 = findall(row -> (BeginYear <= parse(Int, split(row, "-")[1]) <= EndYear), data[!, :Date])  
+    data_year = data[rows1, :]
+    filtered_df = select(data_year, [Countries...])
+    for row in eachrow(filtered_df)
+        for (col, value) in pairs(row)
+            if isnan(value)
+                row[col] = 0.0
+            end
+        end
+    end
+    output_file = "/Users/henryverdoodt/Documents/CODE/DATA/BOXPLOT/CF_solar_HadGEM_$(BeginYear)_$(EndYear).csv"
+    CSV.write(output_file, eachcol(filtered_df), header=names(filtered_df))
+    #return output_file
+end 
+csv_boxplot_CF_Coper_countries_year(solar_HadGEM, 2016, 2045, countries_array_woff)
+
+
+datas = [solar_CNRM, windon_CNRM, windoff_CNRM, solar_EARTH, windon_EARTH, windoff_EARTH, solar_HadGEM, windon_HadGEM, windoff_HadGEM]
+
+sun = [solar_CNRM, solar_EARTH, solar_HadGEM]
+won = [windon_CNRM, windon_EARTH, windon_HadGEM]
+woff = [windoff_CNRM, windoff_EARTH, windoff_HadGEM]
+
+for d in sun:
+    datafr = csv_boxplot_CF_Coper_countries(d, 1986, 2015, countries_array)
+end
+
+    for c in Countries
+        data_year[!, Symbol(c)]
+
+        filtered_df = select(data_year, [Countries...]) 
+    if Yearly
+        matrix = hcat(data_year[!, Symbol(region[1])], data_year[!, Symbol(region[2])], data_year[!, Symbol(region[3])])
+        rows, cols = size(matrix)
+        mean_values = zeros(rows)
+        for i in 1:rows
+            row = matrix[i, :]
+            if all(isnan.(row))
+                mean_values[i] = 0.0
+            else
+                valid_values = filter(x -> !isnan(x), row)
+                mean_values[i] = mean(valid_values)
+            end
+        end
+        data_year_region = mean_values
+        #data_year_region = filter(!isnan, vcat(data_year[!, Symbol(region[1])], data_year[!, Symbol(region[2])], data_year[!, Symbol(region[3])]))
+        output_file = "/Users/henryverdoodt/Documents/CODE/DATA/BOXPLOT/$(data_name)_$(BeginYear)_$(EndYear)_year_$(region_name).csv"
+        CSV.write(output_file, DataFrame(data=data_year_region))  
+        #return data_year_region
+    else
+        data_season = data_year[findall(row -> split(row, "-")[2] in Set(Season), data_year[!, :Date]), :]
+        data_season_region = filter(!isnan, vcat(data_season[!, Symbol(region[1])], data_season[!, Symbol(region[2])], data_season[!, Symbol(region[3])]))
+        output_file = "/Users/henryverdoodt/Documents/CODE/DATA/BOXPLOT/$(data_name)_$(BeginYear)_$(EndYear)_$(season_name)_$(region_name).csv"   
+        CSV.write(output_file, DataFrame(data=data_season_region))
+        #return data_season_region
+    end
+end
+
+df = DataFrame()
+for country in countries_array
+    count_array = Float64[]
+    for a in years_array
+        capa = gen_dict[country][unit][a]
+        push!(count_array, capa)
+    end
+    df.c = count_array
+    rename!(df, :c => Symbol.(country))
+end
+output_file = "/Users/henryverdoodt/Documents/CODE/DATA/BOXPLOT_RES/$(unit)_$(Climate_Model)_$(year_start)_$(year_end)_fixed_network_V2.csv"
+CSV.write(output_file, eachcol(df), header=names(df))
 
 
 

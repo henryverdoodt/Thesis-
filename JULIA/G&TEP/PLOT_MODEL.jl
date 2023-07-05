@@ -274,4 +274,41 @@ function plot_transmission_capacities(dict1::Dict, dict2::Dict)
     heatmap(countries, countries, capacity_matrix, c=:blues, aspect_ratio=:equal, xlabel="To country", ylabel="From country", title="Capacity needed for different links (MW)")
 end
 
+# Distribution of the power flow for transmission line put in argument
+function plot_power_flow_histogram(variables::Vector{String})
+    val = Vector{Float64}()
+    for i in 1:length(value.(m.ext[:variables][:pl][:, variables]))
+        append!(val, value.(m.ext[:variables][:pl][i, variables]))
+    end
 
+    # Calculate the intervals
+    intervals = 0:0.05:1
+    max_val = maximum(val)
+
+    # Calculate the percentage of values in each interval
+    percentages = [count(v -> (v / max_val) >= interval && (v / max_val) < interval + 0.05, val) / length(val) * 100 for interval in intervals]
+
+    #xtick_labels = ["0-5%", "5-10%", "10-15%", "15-20%", "20-25%", "25-30%", "30-35%", "35-40%", "40-45%", "45-50%", "50-55%", "55-60%", "60-65%", "65-70%", "70-75%", "75-80%", "80-85%", "85-90%", "90-95%", "95-100%"]
+    xtick_labels = ["0-5%", "", "", "", "", "25-30%", "", "", "", "", "50-55%", "", "", "", "", "75-80%", "", "", "", "95-100%"]
+
+    # Plot the histogram
+    bar(intervals, percentages, xticks=(intervals, xtick_labels), xlabel="Interval relative to capacity line", ylabel="Occurence [%]", legend=false, title = "Distribution of Power Flow in $(variables[1])-$(variables[2]) Line")
+end
+
+function plot_demand(df)
+    # Initialize an empty array to store the column sums
+    sums = Float64[]
+    
+    # Calculate the sum of each column and divide by 1,000,000
+    for col in names(df)
+        col_sum = sum(df[!, col]) / 1_000_000
+        push!(sums, col_sum)
+    end
+    
+    # Get the country names from the column names
+    countries = names(df)
+    
+    # Plot the data
+    bar(countries, sums, title="Demand national estimates 2030 (TWh)",
+        xlabel="Countries", ylabel="Demand (TWh)", legend=false)
+end

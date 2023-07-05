@@ -399,7 +399,7 @@ PowerSector:
   emissions: 0 # Mton/TWh
   efficiency: 1 # not used (Inital value was 0 but change it to 1 to use it in the formulas)
   gMAX: 10 # MW
-  OC: 1118 #1748 # MEUR/GW
+  OC: 1748 # MEUR/GW
   Legcap_2019: 10.6 # GW
   Legcap_2020: 13.2 # GW
   Legcap_2021: 14.12 # GW

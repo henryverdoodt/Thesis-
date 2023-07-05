@@ -467,7 +467,7 @@ AC_Lines:
  AC_1:
   Connection: ["ES", "FR"]
   Length: 100 # km                 # INELFE : 400 km (existing) (5000 MW)
-  Price: 16450 #31280 # EUR/km.MW   # (Schlott et al.) paper use 16 450 EUR/km.MW # 2000 EUR/km.MW (previous value: 31280 EUR/km.MW) comes from my assumptions (mean value of a lot of existing AC lines cost)
+  Price: 16450  #31280 # EUR/km.MW   # (Schlott et al.) paper use 16 450 EUR/km.MW # 2000 EUR/km.MW (previous value: 31280 EUR/km.MW) comes from my assumptions (mean value of a lot of existing AC lines cost) #onshore grid : 1000 €/km.MW https://www.isi.fraunhofer.de/content/dam/isi/dokumente/ccx/2011/Final_Report_EU-Long-term-scenarios-2050.pdf
   Capacity_2025: 5000 # MW   # Today's grid + expected additional capacity until 2025              
   Capacity_2030: 8000 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2030 
   Capacity_2040: 9500 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2040                           
@@ -598,7 +598,7 @@ DC_Lines:
  DC_1:
   Connection: ["UK", "FR"]    # Chilling - Tourbe              # source length assumption of HVDC lines: https://en.wikipedia.org/wiki/List_of_HVDC_projects
   Length: 204 # km                                      # 400  EUR/km.MW (Over-land HVDC) (Schlachtberger et al. "The benefits of cooperation in a highly renewable European electricity network")
-  Price: 16450 #41150 # EUR/km.MW                       # 2000 EUR/km.MW (UNDERGROUND HVDC Submarine Power Cables in the World .pdf) + (Schlachtberger et al. "The benefits of cooperation in a highly renewable European electricity network")
+  Price: 16450 #41150 # EUR/km.MW                       # 2000 EUR/km.MW (UNDERGROUND HVDC Submarine Power Cables in the World .pdf) + (Schlachtberger et al. "The benefits of cooperation in a highly renewable European electricity network") #undersea cables : 1667 €/km.MW https://www.isi.fraunhofer.de/content/dam/isi/dokumente/ccx/2011/Final_Report_EU-Long-term-scenarios-2050.pdf
   Capacity_2025: 4000 # MW   # Today's grid + expected additional capacity until 2025              
   Capacity_2030: 8800 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2030 
   Capacity_2040: 8800 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2040 
@@ -620,12 +620,12 @@ DC_Lines:
   Capacity_2040: 2800 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2040 
 
  DC_4:
-  Connection: ["NO", "BE"]    # Feda - Bruges --> ASSUMPTION (do not exist)  # REPLACE WITH NO - DE capacity_2025_2030_2040 equal to 1400 MW
+  Connection: ["NO", "DE"]    # Feda - Bruges --> ASSUMPTION (do not exist)  # REPLACE WITH NO - DE capacity_2025_2030_2040 equal to 1400 MW
   Length: 820 # km
   Price: 16450 #41150 # EUR/km.MW
-  Capacity_2025: 0 # MW   # Today's grid + expected additional capacity until 2025              
-  Capacity_2030: 0 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2030 
-  Capacity_2040: 0 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2040 
+  Capacity_2025: 1400 # MW   # Today's grid + expected additional capacity until 2025              
+  Capacity_2030: 1400 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2030 
+  Capacity_2040: 1400 # MW   # Today's grid + expected additional capacity until 2025 + needs in 2040 
 
  DC_5:
   Connection: ["NO", "NL"]    # Feda - Eemshaven
