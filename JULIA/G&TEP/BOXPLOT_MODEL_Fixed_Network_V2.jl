@@ -3,9 +3,9 @@
 # Last update: May 27, 2023
 
 ### PARAMETERS ###
-year_start = 2070
-year_end = 2099
-Climate_Models = ["CNRM", "EARTH", "HadGEM"]  # ["CNRM", "EARTH", "HadGEM"]
+year_start = 2016
+year_end = 2045
+Climate_Models = ["CNRM", "EARTH", "HadGEM"] # ["CNRM", "EARTH", "HadGEM"]
 
 
 using CSV, YAML, JuMP, DataFrames, Distributions, Gurobi, Images, Plots, PolyChaos, InteractiveUtils
@@ -15,15 +15,18 @@ using StatsPlots, Images
 include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/REFORMAT_DATA.jl")
 include("/Users/henryverdoodt/Documents/CODE/JULIA/G&TEP/PLOT_MODEL.jl")
 
+#gen_dict = Dict{String, Dict{String, Dict{Int64, Float64}}}()
 for Climate_Model in Climate_Models
     IP = ["Solar", "WindOnshore", "WindOffshore"]
+    TOT = ["Demand", "ENS", "Solar", "WindOnshore", "WindOffshore", "Nuclear", "SPP_lignite", "SPP_coal", "OCGT", "ICE", "Biofuel", "Hydro_RoR", "Batteries_dis", "PHS_OL_dis", "PHS_CL_dis", "Hydro_Res_dis", "Hydro_Pon_dis", "Batteries_ch", "PHS_OL_ch", "PHS_CL_ch", "Hydro_Res_ch", "Hydro_Pon_ch", "Power import", "Power export", "Curtailment"]
+
     gen_dict = Dict{String, Dict{String, Dict{Int64, Float64}}}()  
     for node in N
-        gen_dict[node] = Dict((gen => Dict{Int64, Float64}() for gen in IP)...) # Country => Unit => (year1: capacity, year2: capacity, ...)
+        gen_dict[node] = Dict((gen => Dict{Int64, Float64}() for gen in TOT)...) # Country => Unit => (year1: capacity, year2: capacity, ...)
     end
     for year in year_start:year_end 
         ############################ DATA PARAMETERS ############################
-        countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
+        countries = ["PT", "ES", "IT", "FR", "CH", "AT", "BE", "DE", "NL", "UK", "IE", "DK", "NO", "SE", "FI"]  # ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
         representative_years = [1995.0, 2008.0, 2009.0]
         weights = [0.233, 0.367, 0.4]
         aggregate_3h = true
@@ -33,7 +36,7 @@ for Climate_Model in Climate_Models
         countries_windon = countries_windon_coper_HadGEM       # countries_windon_coper_earth       # countries_windon_entso 
         countries_windoff = countries_windoff_coper_HadGEM     # countries_windoff_coper_earth      # countries_windoff_entso
 
-        countries_dem = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "AT", "SE"]
+        countries_dem = ["ES", "FR", "CH", "AT", "BE", "DE", "NL", "UK", "IE", "DK", "NO", "SE", "FI"]  # ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "AT", "SE"]
 
         # Read the CSV file into a DataFrame
 
@@ -279,7 +282,7 @@ for Climate_Model in Climate_Models
             g = m.ext[:variables][:g] = @variable(m, [i=I,j=J,n=N], lower_bound=0, base_name="generation") # Power produced by candidate generating unit i at time j in node n [MW]
             cap = m.ext[:variables][:cap] = @variable(m, [i=I,n=N], lower_bound=0, base_name="capacity of generating unit") # Capacity of candidate generating unit i in node n[MW]
             ens = m.ext[:variables][:ens] = @variable(m, [j=J,n=N], lower_bound=0, base_name="energy not served") # Energy Not Served at time j in node n [MWh] (OR Should I use Load shed of demand instead in MW?)
-            pl = m.ext[:variables][:pl] = @variable(m, [j=J,l=L], lower_bound=0, base_name="power flow in transmission") # Power flow through Transmission Line l at time j [MW]
+            pl = m.ext[:variables][:pl] = @variable(m, [j=J,l=L], base_name="power flow in transmission") # Power flow through Transmission Line l at time j [MW]
             #θ = m.ext[:variables][:θ] = @variable(m, [j=J,n=N], lower_bound=0, base_name="voltage angle") # Voltage angle at node n and time j [rad]
             #varlac = m.ext[:variables][:varlac] = @variable(m, [la=L_ac], lower_bound=0, base_name="capacity of ac line") # Capacity of AC line [MW]
             #varldc = m.ext[:variables][:varldc] = @variable(m, [ld=L_dc], lower_bound=0, base_name="capacity of dc line") # Capacity of DC line [MW]
@@ -357,36 +360,94 @@ for Climate_Model in Climate_Models
 
         N = m.ext[:sets][:Nodes]
         I = m.ext[:sets][:I]
+        S = m.ext[:sets][:S]
         L_ac = m.ext[:sets][:AC_Lines] 
         L_dc = m.ext[:sets][:DC_Lines]
+        L = m.ext[:sets][:Lines]
         IV = ["Solar", "WindOnshore", "WindOffshore"]
+        ITOT = ["Solar", "WindOnshore", "WindOffshore", "Nuclear", "SPP_lignite", "SPP_coal", "OCGT", "ICE", "Biofuel", "Hydro_RoR"]
     
         for node in N
-            for unit in IV
-                gen_dict[node][unit][year] = value.(m.ext[:variables][:cap][unit, node])
+            gen_dict[node]["Demand"][year] = (-1)*sum(value.(m.ext[:timeseries][:D][Symbol(node)]))
+            gen_dict[node]["ENS"][year] = sum(value.(m.ext[:variables][:ens][:,node]))
+            for unit in ITOT
+                gen_dict[node][unit][year] = sum(value.(m.ext[:variables][:g][unit,:,node]))
             end
+            for s in S 
+                gen_dict[node][s*"_dis"][year] = sum(value.(m.ext[:variables][:d][s,:,node]))
+                gen_dict[node][s*"_ch"][year] = (-1)*sum(value.(m.ext[:variables][:c][s,:,node]))
+            end
+            P_imp = 0.0
+            P_exp = 0.0
+            for l in L
+                if (l[1] == node)
+                    P_imp += abs(sum(x -> x > 0.0 ? x : 0.0, value.(m.ext[:variables][:pl][:,l])))
+                    P_exp += abs(sum(x -> x < 0.0 ? x : 0.0, value.(m.ext[:variables][:pl][:,l])))
+                end
+                if (l[2] == node)
+                    P_imp += abs(sum(x -> x < 0.0 ? x : 0.0, value.(m.ext[:variables][:pl][:,l])))
+                    P_exp += abs(sum(x -> x > 0.0 ? x : 0.0, value.(m.ext[:variables][:pl][:,l])))
+                end
+            end
+            gen_dict[node]["Power import"][year] = P_imp
+            gen_dict[node]["Power export"][year] = (-1)*P_exp
+            gen_dict[node]["Curtailment"][year] = ((-1)*((-1)*sum(value.(m.ext[:timeseries][:D][Symbol(node)])) + sum(value.(m.ext[:variables][:g][:,:,node])) + sum(value.(m.ext[:variables][:d][:,:,node])) + (-1)*sum(value.(m.ext[:variables][:c][:,:,node])) + sum(value.(m.ext[:variables][:ens][:,node])) + P_imp + (-1)*P_exp))
+
+        end
+
+        # for node in N
+        #     for unit in IV
+        #         gen_dict[node][unit][year] = value.(m.ext[:variables][:cap][unit, node])
+        #     end
+        # end
+
+    end
+    #init dictionary with the mean generation value of each technology over a period of 30 years
+    gen_dict_tot = Dict{String, Dict{String, Float64}}()  
+    for node in N
+        gen_dict_tot[node] = Dict{String, Float64}((gen, 0.0) for gen in TOT) # Country => Unit => (year1: capacity, year2: capacity, ...)
+    end
+
+    years_array = collect(year_start:year_end)
+    for node in N
+        for i in TOT
+            gen_dict_tot[node][i] = sum(gen_dict[node][i][y] for y in years_array) / length(years_array)
         end
     end
 
-
-    years_array = collect(year_start:year_end)
-    units = ["Solar", "WindOnshore", "WindOffshore"]
+    #units = ["Solar", "WindOnshore", "WindOffshore"]
+    TOT = ["Demand", "ENS", "Solar", "WindOnshore", "WindOffshore", "Nuclear", "SPP_lignite", "SPP_coal", "OCGT", "ICE", "Biofuel", "Hydro_RoR", "Batteries_dis", "PHS_OL_dis", "PHS_CL_dis", "Hydro_Res_dis", "Hydro_Pon_dis", "Batteries_ch", "PHS_OL_ch", "PHS_CL_ch", "Hydro_Res_ch", "Hydro_Pon_ch", "Power import", "Power export", "Curtailment"]
     countries_array = ["PT", "ES", "IT", "FR", "CH", "AT", "BE", "DE", "NL", "UK", "IE", "DK", "NO", "SE", "FI"]
 
 
-    for unit in units
-        df = DataFrame()
-        for country in countries_array
-            count_array = Float64[]
-            for a in years_array
-                capa = gen_dict[country][unit][a]
-                push!(count_array, capa)
-            end
-            df.c = count_array
-            rename!(df, :c => Symbol.(country))
+    df = DataFrame()
+    df.Power = TOT
+    for country in countries_array
+        count_array = Float64[]
+        for tech in TOT
+            power = gen_dict_tot[country][tech]
+            push!(count_array, power)
         end
-        output_file = "/Users/henryverdoodt/Documents/CODE/DATA/BOXPLOT_RES/$(unit)_$(Climate_Model)_$(year_start)_$(year_end)_fixed_network_V2.csv"
-        CSV.write(output_file, eachcol(df), header=names(df))
+        df.c = count_array
+        rename!(df, :c => Symbol.(country))
     end
+    output_file = "/Users/henryverdoodt/Documents/CODE/DATA/GENERATION/Average_Generation_$(Climate_Model)_$(year_start)_$(year_end).csv"
+    CSV.write(output_file, eachcol(df), header=names(df))
+end
 
-end 
+#     for unit in units
+#         df = DataFrame()
+#         for country in countries_array
+#             count_array = Float64[]
+#             for a in years_array
+#                 capa = gen_dict[country][unit][a]
+#                 push!(count_array, capa)
+#             end
+#             df.c = count_array
+#             rename!(df, :c => Symbol.(country))
+#         end
+#         output_file = "/Users/henryverdoodt/Documents/CODE/DATA/BOXPLOT_RES/$(unit)_$(Climate_Model)_$(year_start)_$(year_end)_fixed_network_V2.csv"
+#         CSV.write(output_file, eachcol(df), header=names(df))
+#     end
+
+# end 

@@ -33,10 +33,10 @@ Pkg.add("Images")
  
  
  ############################ DATA PARAMETERS ############################
- countries = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
+ countries = ["PT", "ES", "IT", "FR", "CH", "AT", "BE", "DE", "NL", "UK", "IE", "DK", "NO", "SE", "FI"] # ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "IT", "AT", "PT", "SE"]   #["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO"]
 
  # demand_entso: 1982.0 - 2016.0    and   solar,windon,windoff_entso: 1982.0 - 2019.0
- year = 1986  # year weather data
+ year = 2009  # year weather data
  representative_years = [1995.0, 2008.0, 2009.0] # year demand 
  weights = [0.233, 0.367, 0.4] # weights demand years
  aggregate_3h = true # aggregate 1h timestep data to 3h timestep data
@@ -48,7 +48,7 @@ Pkg.add("Images")
  countries_windoff = countries_windoff_coper_CNRM     # countries_windoff_coper_cnrm      # countries_windoff_entso
  
  #Countries from domain where demand data exist (not IT and PT)
- countries_dem = ["ES", "FR", "BE", "DE", "NL", "UK", "DK", "NO", "CH", "FI", "IE", "AT", "SE"]
+ countries_dem = ["ES", "FR", "CH", "AT", "BE", "DE", "NL", "UK", "IE", "DK", "NO", "SE", "FI"]
  
  # Read the CSV file into a DataFrame
  
@@ -56,6 +56,8 @@ Pkg.add("Images")
  dem = reformat_entso_demand(demand_entso, countries_dem, countries_demand_entso, representative_years, weights, aggregate_3h)
  dem_PT_IT = reformat_demand_PT_IT(new_demand_PT_IT, aggregate_3h)
  dem = hcat(dem, dem_PT_IT)
+ dem = select!(dem, [:PT, :ES, :IT, :FR, :CH, :AT, :BE, :DE, :NL, :UK, :IE, :DK, :NO, :SE, :FI])
+
 
  #=
  ## REF CASE CF
@@ -297,7 +299,7 @@ Pkg.add("Images")
      g = m.ext[:variables][:g] = @variable(m, [i=I,j=J,n=N], lower_bound=0, base_name="generation") # Power produced by candidate generating unit i at time j in node n [MW]
      cap = m.ext[:variables][:cap] = @variable(m, [i=I,n=N], lower_bound=0, base_name="capacity of generating unit") # Capacity of candidate generating unit i in node n[MW]
      ens = m.ext[:variables][:ens] = @variable(m, [j=J,n=N], lower_bound=0, base_name="energy not served") # Energy Not Served at time j in node n [MWh] (OR Should I use Load shed of demand instead in MW?)
-     pl = m.ext[:variables][:pl] = @variable(m, [j=J,l=L], lower_bound=0, base_name="power flow in transmission") # Power flow through Transmission Line l at time j [MW]
+     pl = m.ext[:variables][:pl] = @variable(m, [j=J,l=L], base_name="power flow in transmission") # Power flow through Transmission Line l at time j [MW]
      #θ = m.ext[:variables][:θ] = @variable(m, [j=J,n=N], lower_bound=0, base_name="voltage angle") # Voltage angle at node n and time j [rad]
      #varlac = m.ext[:variables][:varlac] = @variable(m, [la=L_ac], lower_bound=0, base_name="capacity of ac line") # Capacity of AC line [MW]
      #varldc = m.ext[:variables][:varldc] = @variable(m, [ld=L_dc], lower_bound=0, base_name="capacity of dc line") # Capacity of DC line [MW]
@@ -323,7 +325,8 @@ Pkg.add("Images")
      #obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in I, n in N) + sum(ICS["PtH"]*cap_PtH[n] for n in N) + sum(ICS["OCGT_H"]*cap_OCGT[n] for n in N) + sum(IC_var_AC[find_line_number(network["AC_Lines"], la)]*varlac[la] for la in L_ac) + sum(IC_var_DC[find_line_number(network["DC_Lines"], ld)]*varldc[ld] for ld in L_dc) + sum(VC[i]*g[i,j,n] for i in I, j in J, n in N) + sum(VCS["PtH"]*g_PtH[j,n] for j in J, n in N) + sum(VCS["OCGT_H"]*g_OCGT[j,n] for j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N))
      #obj = m.ext[:objective] = @objective(m, Min, sum(IC[i]*cap[i,n] for i in I, n in N)  + sum(IC_var_AC[find_line_number(network["AC_Lines"], la)]*varlac[la] for la in L_ac) + sum(IC_var_DC[find_line_number(network["DC_Lines"], ld)]*varldc[ld] for ld in L_dc) + sum((FC[i]*g[i,j,n] + CO2[i]*alphaCO2*g[i,j,n]) for i in I, j in J, n in N) + sum(VOLL*ens[j,n] for j in J, n in N))
  
-      
+    
+     
      # Constraints
      con_MC = m.ext[:constraints][:con_MC] = @constraint(m, [j=J, n=N], sum(g[i,j,n] for i in ITOT) + sum(d[i,j,n] for i in S) - sum(c[i,j,n] for i in S) + sum(pl[j,l] for l in L if l[1] == n; init=0)  >= D[Symbol(n)][j] - ens[j,n] + sum(pl[j,l] for l in L if l[2] == n; init=0)) # Market Clearing constraint (if we assume curtailment of RES: replace == with >=) NOT OKAY SHOULD USE + P_RECEIVING - P_SENDING
 
@@ -439,7 +442,53 @@ end
  
  plot(generation_abs, transmission_map, layout=(1,2), size=(1200,500))
 
+# for n in N
+#     println(n)
+#     println("Demand: $((-1)*sum(value.(m.ext[:timeseries][:D][Symbol(n)])))")
+#     println("Generation: $(sum(value.(m.ext[:variables][:g][:,:,n])))")
+#     println("Storage discharge: $(sum(value.(m.ext[:variables][:d][:,:,n])))")
+#     println("Storage charge: $((-1)*sum(value.(m.ext[:variables][:c][:,:,n])))")
+#     println("Energy Not Served: $(sum(value.(m.ext[:variables][:ens][:,n])))")
+#     P_imp = 0.0
+#     P_exp = 0.0
+#     for l in L
+#         if (l[1] == n)
+#             P_imp += abs(sum(x -> x > 0.0 ? x : 0.0, value.(m.ext[:variables][:pl][:,l])))
+#             P_exp += abs(sum(x -> x < 0.0 ? x : 0.0, value.(m.ext[:variables][:pl][:,l])))
+#         end
+#         if (l[2] == n)
+#             P_imp += abs(sum(x -> x < 0.0 ? x : 0.0, value.(m.ext[:variables][:pl][:,l])))
+#             P_exp += abs(sum(x -> x > 0.0 ? x : 0.0, value.(m.ext[:variables][:pl][:,l])))
+#         end
+#     end
+#     println("Power flow import: $(P_imp)")
+#     println("Power flow export: $((-1)*P_exp)")
+#     println("Curtailment: $((-1)*sum(value.(m.ext[:timeseries][:D][Symbol(n)])) + sum(value.(m.ext[:variables][:g][:,:,n])) + sum(value.(m.ext[:variables][:d][:,:,n])) + (-1)*sum(value.(m.ext[:variables][:c][:,:,n])) + sum(value.(m.ext[:variables][:ens][:,n])) + P_imp + (-1)*P_exp)")
+#     println("Percentage of Curtailment: $(100* ((-1)*sum(value.(m.ext[:timeseries][:D][Symbol(n)])) + sum(value.(m.ext[:variables][:g][:,:,n])) + sum(value.(m.ext[:variables][:d][:,:,n])) + (-1)*sum(value.(m.ext[:variables][:c][:,:,n])) + sum(value.(m.ext[:variables][:ens][:,n])) + P_imp + (-1)*P_exp) / (sum(value.(m.ext[:variables][:g][:,:,n])) + sum(value.(m.ext[:variables][:d][:,:,n])) + (-1)*sum(value.(m.ext[:variables][:c][:,:,n])) + P_imp + (-1)*P_exp)) %")
+#     println(" ")
+# end
 
+# for n in N
+#     println(n)
+#     for i in I
+#         println(i)
+#         println(sum(value.(m.ext[:variables][:g][i,:,n])))
+#     end
+# end
 
+# for n in N
+#     println(n)
+#     for s in S
+#         println(s)
+#         println(sum(value.(m.ext[:variables][:d][s,:,n])))
+#     end
+# end
 
+# for n in N
+#     println(n)
+#     for s in S
+#         println(s)
+#         println(sum(value.(m.ext[:variables][:c][s,:,n])))
+#     end
+# end
 
